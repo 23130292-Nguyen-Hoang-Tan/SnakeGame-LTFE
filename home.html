@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNAKE GAME - Cartoon Style</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --sky-color: #55b9f3;
+            --grass-color: #7cb342;
+            --grass-edge: #689f38;
+            --dirt-color: #8d6e63;
+            --dirt-dark: #5d4037;
+            
+            --btn-green: #4caf50;
+            --btn-green-shadow: #2e7d32;
+            --btn-blue: #03a9f4;
+            --btn-blue-shadow: #0277bd;
+            --btn-orange: #ff9800;
+            --btn-orange-shadow: #ef6c00;
+            --modal-bg: #fff9c4;
+            --modal-border: #f57f17;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Fredoka One', cursive;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--dirt-color);
+        }
+
+        .sky {
+            height: 30vh;
+            width: 100%;
+            background-color: var(--sky-color);
+            position: relative;
+            z-index: 1;
+        }
+
+        .ground {
+            height: 70vh;
+            width: 100%;
+            background: linear-gradient(to bottom, var(--grass-color) 0%, var(--grass-color) 30%, var(--dirt-color) 30%, var(--dirt-color) 100%);
+            position: relative;
+            z-index: 2;
+            border-top: 15px solid #aed581; /* Grassy edge */
+        }
+
+        /* Họa tiết caro mờ cho đất */
+        .ground::before {
+            content: '';
+            position: absolute;
+            top: 30%;
+            left: 0;
+            width: 100%;
+            height: 70%;
+            background-image: radial-gradient(var(--dirt-dark) 15%, transparent 16%), radial-gradient(var(--dirt-dark) 15%, transparent 16%);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+            opacity: 0.1;
+        }
+
+        .cloud {
+            position: absolute;
+            background: white;
+            border-radius: 50px;
+            animation: float-cloud linear infinite;
+        }
+        .cloud::before, .cloud::after {
+            content: '';
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+        }
+        .c1 { width: 150px; height: 50px; top: 10vh; left: -200px; animation-duration: 25s; }
+        .c1::before { width: 70px; height: 70px; top: -35px; left: 20px; }
+        .c1::after { width: 50px; height: 50px; top: -25px; right: 25px; }
+        
+        .c2 { width: 120px; height: 40px; top: 5vh; left: -150px; animation-duration: 35s; animation-delay: 10s; transform: scale(0.8); }
+        .c2::before { width: 60px; height: 60px; top: -30px; left: 15px; }
+        .c2::after { width: 40px; height: 40px; top: -20px; right: 15px; }
+
+        @keyframes float-cloud {
+            0% { transform: translateX(-200px); }
+            100% { transform: translateX(110vw); }
+        }
+
+        .scenery-item {
+            position: absolute;
+            z-index: 3;
+            font-size: 5rem;
+            filter: drop-shadow(0 10px 5px rgba(0,0,0,0.3));
+        }
+
+
+        .ui-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .ui-content {
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3vh;
+            margin-top: 5vh;
+        }
+
+        .game-title {
+            font-size: 6rem;
+            color: #fff176;
+            text-align: center;
+            line-height: 1;
+            letter-spacing: 4px;
+            text-shadow: 
+                -4px -4px 0 #f57f17,  4px -4px 0 #f57f17,
+                -4px  4px 0 #f57f17,  4px  4px 0 #f57f17,
+                 0 12px 0 #e65100, 0 20px 15px rgba(0,0,0,0.5);
+            animation: bounceIn 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-bottom: 2vh;
+            position: relative;
+        }
+
+        .game-title span {
+            display: block;
+            font-size: 4rem;
+            color: #b9f6ca;
+            text-shadow: 
+                -3px -3px 0 #1b5e20,  3px -3px 0 #1b5e20,
+                -3px  3px 0 #1b5e20,  3px  3px 0 #1b5e20,
+                 0 8px 0 #004d40;
+        }
+
+        .snake-icon {
+            position: absolute;
+            font-size: 5rem;
+            top: -20px;
+            right: -50px;
+            transform: rotate(15deg);
+            filter: drop-shadow(0 5px 0 #1b5e20);
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.1); opacity: 0; }
+            60% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        /* Hiệu ứng 3D cho nút bấm*/
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            width: 320px;
+        }
+
+        .btn {
+            font-family: 'Segoe UI', bold, sans-serif;
+            font-size: 1.8rem;
+            color: white;
+            padding: 18px 20px;
+            border: 5px solid white;
+            border-radius: 35px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.1s;
+            position: relative;
+            text-shadow: 2px 3px 0 rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .btn-play {
+            background-color: var(--btn-green);
+            box-shadow: 0 10px 0 var(--btn-green-shadow), 0 20px 15px rgba(0,0,0,0.3);
+        }
+        .btn-level {
+            background-color: var(--btn-blue);
+            box-shadow: 0 10px 0 var(--btn-blue-shadow), 0 20px 15px rgba(0,0,0,0.3);
+        }
+        .btn-guide {
+            background-color: var(--btn-orange);
+            box-shadow: 0 10px 0 var(--btn-orange-shadow), 0 20px 15px rgba(0,0,0,0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(3px);
+        }
+        .btn-play:hover { box-shadow: 0 7px 0 var(--btn-green-shadow), 0 15px 15px rgba(0,0,0,0.3); }
+        .btn-level:hover { box-shadow: 0 7px 0 var(--btn-blue-shadow), 0 15px 15px rgba(0,0,0,0.3); }
+        .btn-guide:hover { box-shadow: 0 7px 0 var(--btn-orange-shadow), 0 15px 15px rgba(0,0,0,0.3); }
+
+        .btn:active {
+            transform: translateY(10px);
+            box-shadow: 0 0px 0 transparent !important;
+        }
+
+        @media (max-height: 700px) {
+            .game-title { font-size: 4.5rem; }
+            .btn { font-size: 1.4rem; padding: 12px 20px; }
+            .ui-content { gap: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Bầu trời -->
+    <div class="sky">
+        <div class="cloud c1"></div>
+        <div class="cloud c2"></div>
+    </div>
+
+    <!--Mặt đất & Cây cỏ -->
+    <div class="ground"></div>
+
+    <!-- Lớp giao diện (Chứa Tiêu đề và Nút bấm) -->
+    <div class="ui-layer">
+        <div class="ui-content">
+            <h1 class="game-title">
+                SNAKE
+                <span>ADVENTURE</span>
+                <div class="snake-icon">🐍</div>
+            </h1>
+            
+            <div class="btn-group">
+                <button class="btn btn-play" onclick="playGame()">
+                    <span>▶</span> CHƠI
+                </button>
+                <button class="btn btn-level" onclick="openModal('levelModal')">
+                    <span>⭐</span> CHỌN LEVEL
+                </button>
+                <button class="btn btn-guide" onclick="openModal('instructionModal')">
+                    <span>📖</span> HƯỚNG DẪN
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // Nạp 2 hộp thoại từ file riêng
+        async function loadModals() {
+            try {
+                const [levelResponse, instructionResponse] = await Promise.all([
+                    fetch('level.html'),
+                    fetch('guide.html')
+                ]);
+
+                if (!levelResponse.ok || !instructionResponse.ok) {
+                    throw new Error('Không thể tải file modal.');
+                }
+
+                document.getElementById('levelModalContainer').innerHTML =
+                    await levelResponse.text();
+
+                document.getElementById('instructionModalContainer').innerHTML =
+                    await instructionResponse.text();
+
+            } catch (error) {
+                console.error('Lỗi khi tải modal:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadModals);
+
+        // Mở hộp thoại (Modal)
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        // Đóng hộp thoại (Modal)
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Xử lý chọn Level
+        function selectLevel(element, level) {
+            // Xóa class 'active' khỏi các nút khác
+            const btns = document.querySelectorAll('.level-btn');
+            btns.forEach(btn => {
+                btn.classList.remove('active');
+                // Reset box-shadow cho các nút không active
+                btn.style.boxShadow = 'none';
+            });
+            
+            // Thêm class 'active' cho nút được chọn
+            element.classList.add('active');
+            
+            // Lưu level được chọn vào bộ nhớ hoặc log ra console
+            console.log("Đã chọn độ khó:", level);
+        }
+
+        // Xử lý nút Chơi
+        function playGame() {
+            const ui = document.querySelector('.ui-content');
+            
+            // Hiệu ứng "bay đi" trước khi vào game
+            ui.style.transition = 'transform 0.5s cubic-bezier(0.55, 0.085, 0.68, 0.53), opacity 0.5s';
+            ui.style.transform = 'translateY(-100vh) scale(0.5)';
+            ui.style.opacity = '0';
+            
+            setTimeout(() => {
+                // Thay thế UI bằng màn hình đang tải (sau này bạn có thể chèn Canvas Game vào đây)
+                ui.style.transform = 'translateY(0) scale(1)';
+                ui.style.opacity = '1';
+                ui.innerHTML = `
+                    <h1 class="game-title" style="font-size: 4rem; color: #fff;">
+                        ĐANG VÀO GAME...
+                    </h1>
+                `;
+            }, 600);
+        }
+    </script>
+</body>
+</html>    <!-- Các hộp thoại được tách thành file riêng -->
+    <div id="levelModalContainer"></div>
+    <div id="instructionModalContainer"></div>
