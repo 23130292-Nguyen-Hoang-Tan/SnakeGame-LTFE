@@ -40,38 +40,10 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            background-color: var(--dirt-color);
-        }
-
-        .sky {
-            height: 30vh;
-            width: 100%;
-            background-color: var(--sky-color);
+            background:
+                linear-gradient(rgba(0,0,0,0.08), rgba(0,0,0,0.08)),
+                url('img/home-bg.jpg') center center / cover no-repeat;
             position: relative;
-            z-index: 1;
-        }
-
-        .ground {
-            height: 70vh;
-            width: 100%;
-            background: linear-gradient(to bottom, var(--grass-color) 0%, var(--grass-color) 30%, var(--dirt-color) 30%, var(--dirt-color) 100%);
-            position: relative;
-            z-index: 2;
-            border-top: 15px solid #aed581; /* Grassy edge */
-        }
-
-        /* Họa tiết caro mờ cho đất */
-        .ground::before {
-            content: '';
-            position: absolute;
-            top: 30%;
-            left: 0;
-            width: 100%;
-            height: 70%;
-            background-image: radial-gradient(var(--dirt-dark) 15%, transparent 16%), radial-gradient(var(--dirt-dark) 15%, transparent 16%);
-            background-size: 60px 60px;
-            background-position: 0 0, 30px 30px;
-            opacity: 0.1;
         }
 
         .cloud {
@@ -155,7 +127,7 @@
 
         .snake-icon {
             position: absolute;
-            font-size: 5rem;
+            font-size: 6rem;
             top: -20px;
             right: -50px;
             transform: rotate(15deg);
@@ -228,14 +200,8 @@
 </head>
 <body>
 
-    <!-- Bầu trời -->
-    <div class="sky">
-        <div class="cloud c1"></div>
-        <div class="cloud c2"></div>
-    </div>
-
-    <!--Mặt đất & Cây cỏ -->
-    <div class="ground"></div>
+    <div class="cloud c1"></div>
+    <div class="cloud c2"></div>
 
     <!-- Lớp giao diện (Chứa Tiêu đề và Nút bấm) -->
     <div class="ui-layer">
