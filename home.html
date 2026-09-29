@@ -3,11 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SNAKE GAME - Cartoon Style</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <title>SNAKE GAME - LTFE</title>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
-    
     <style>
         :root {
             --sky-color: #55b9f3;
@@ -25,16 +22,14 @@
             --modal-bg: #fff9c4;
             --modal-border: #f57f17;
         }
-
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
             user-select: none;
         }
-
         body {
-            font-family: 'Fredoka One', cursive;
+            font-family: 'Nunito', cursive;
             width: 100vw;
             height: 100vh;
             overflow: hidden;
@@ -45,7 +40,6 @@
                 url('img/home-bg.jpg') center center / cover no-repeat;
             position: relative;
         }
-
         .cloud {
             position: absolute;
             background: white;
@@ -70,15 +64,12 @@
             0% { transform: translateX(-200px); }
             100% { transform: translateX(110vw); }
         }
-
         .scenery-item {
             position: absolute;
             z-index: 3;
             font-size: 5rem;
             filter: drop-shadow(0 10px 5px rgba(0,0,0,0.3));
         }
-
-
         .ui-layer {
             position: absolute;
             top: 0; left: 0;
@@ -90,7 +81,6 @@
             justify-content: center;
             pointer-events: none;
         }
-
         .ui-content {
             pointer-events: auto;
             display: flex;
@@ -99,9 +89,8 @@
             gap: 3vh;
             margin-top: 5vh;
         }
-
         .game-title {
-            font-size: 6rem;
+            font-size: 20rem;
             color: #fff176;
             text-align: center;
             line-height: 1;
@@ -114,32 +103,28 @@
             margin-bottom: 2vh;
             position: relative;
         }
-
         .game-title span {
             display: block;
-            font-size: 4rem;
+            font-size: 8rem;
             color: #b9f6ca;
             text-shadow: 
                 -3px -3px 0 #1b5e20,  3px -3px 0 #1b5e20,
                 -3px  3px 0 #1b5e20,  3px  3px 0 #1b5e20,
                  0 8px 0 #004d40;
         }
-
         .snake-icon {
             position: absolute;
-            font-size: 6rem;
+            font-size: 7rem;
             top: -20px;
             right: -50px;
             transform: rotate(15deg);
             filter: drop-shadow(0 5px 0 #1b5e20);
         }
-
         @keyframes bounceIn {
             0% { transform: scale(0.1); opacity: 0; }
             60% { transform: scale(1.1); opacity: 1; }
             100% { transform: scale(1); }
         }
-
         /* Hiệu ứng 3D cho nút bấm*/
         .btn-group {
             display: flex;
@@ -147,9 +132,8 @@
             gap: 25px;
             width: 320px;
         }
-
         .btn {
-            font-family: 'Segoe UI', bold, sans-serif;
+            font-family: 'Nunito', bold, sans-serif;
             font-size: 1.8rem;
             color: white;
             padding: 18px 20px;
@@ -165,7 +149,6 @@
             justify-content: center;
             gap: 15px;
         }
-
         .btn-play {
             background-color: var(--btn-green);
             box-shadow: 0 10px 0 var(--btn-green-shadow), 0 20px 15px rgba(0,0,0,0.3);
@@ -178,21 +161,18 @@
             background-color: var(--btn-orange);
             box-shadow: 0 10px 0 var(--btn-orange-shadow), 0 20px 15px rgba(0,0,0,0.3);
         }
-
         .btn:hover {
             transform: translateY(3px);
         }
         .btn-play:hover { box-shadow: 0 7px 0 var(--btn-green-shadow), 0 15px 15px rgba(0,0,0,0.3); }
         .btn-level:hover { box-shadow: 0 7px 0 var(--btn-blue-shadow), 0 15px 15px rgba(0,0,0,0.3); }
         .btn-guide:hover { box-shadow: 0 7px 0 var(--btn-orange-shadow), 0 15px 15px rgba(0,0,0,0.3); }
-
         .btn:active {
             transform: translateY(10px);
             box-shadow: 0 0px 0 transparent !important;
         }
-
         @media (max-height: 700px) {
-            .game-title { font-size: 4.5rem; }
+            .game-title { font-size: 7rem; }
             .btn { font-size: 1.4rem; padding: 12px 20px; }
             .ui-content { gap: 15px; }
         }
@@ -206,12 +186,7 @@
     <!-- Lớp giao diện (Chứa Tiêu đề và Nút bấm) -->
     <div class="ui-layer">
         <div class="ui-content">
-            <h1 class="game-title">
-                SNAKE
-                <span>ADVENTURE</span>
-                <div class="snake-icon">🐍</div>
-            </h1>
-            
+            <h1 class="game-title">SNAKE<span>ADVENTURE</span><div class="snake-icon">🐍</div></h1>
             <div class="btn-group">
                 <button class="btn btn-play" onclick="playGame()">
                     <span>▶</span> CHƠI

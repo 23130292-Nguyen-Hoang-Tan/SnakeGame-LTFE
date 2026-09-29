@@ -1,124 +1,366 @@
-<!-- Hộp thoại Chọn Level -->
+
 <style>
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-            z-index: 100;
-        }
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.72);
+        backdrop-filter: blur(6px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        z-index: 100;
+        padding: 20px;
+        box-sizing: border-box;
+    }
 
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: all;
-        }
+    .modal-overlay.active {
+        opacity: 1;
+        pointer-events: all;
+    }
+    /*KHUNG MODAL*/
+    .modal-content {
+        background: linear-gradient(
+            145deg,
+            var(--modal-bg),
+            #fffdf5
+        );
+        border: 8px solid var(--modal-border);
+        border-radius: 40px;
+        padding: 32px;
+        width: 100%;
+        max-width: 620px;
+        max-height: 90vh;
+        text-align: center;
+        box-shadow:0 25px 50px rgba(0,0,0,0.5), inset 0 0 0 6px rgba(255,255,255,0.5);
+        transform: scale(0.5);
+        transition:transform 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+        position: relative;
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+    .modal-overlay.active .modal-content {
+        transform: scale(1);
+    }
+    /*TIÊU ĐỀ*/
+    .modal-title {
+        font-family: 'Nunito', bold;
+        font-size: 2.5rem;
+        color: #d84315;
+        margin: 0 0 5px;
+        text-shadow: 2px 2px 0 #ffcc80;
+    }
+    .modal-subtitle {
+        font-family: 'Nunito', sans-serif;
+        font-size: 1rem;
+        font-weight: 800;
+        color: #757575;
+        margin: 0 0 22px;
+    }
+    /*DANH SÁCH LEVEL*/
+    .level-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+        margin-bottom: 25px;
+    }
+    /*LEVEL BUTTON*/
+    .level-btn {
+        position: relative;
+        width: 100%;
+        border-radius: 22px;
+        border: 4px solid #e0e0e0;
+        background: #fafafa;
+        color: #424242;
+        cursor: pointer;
+        padding: 15px 18px;
+        text-align: left;
+        transition:
+            transform 0.2s ease,
+            background 0.2s ease,
+            border-color 0.2s ease,
+            box-shadow 0.2s ease;
+        font-family: 'Nunito', sans-serif;
+        box-sizing: border-box;
+    }
+    .level-btn:hover {
+        background: #e1f5fe;
+        border-color: #81d4fa;
+        transform: translateX(4px);
+    }
+    /*LEVEL ĐANG CHỌN*/
+    .level-btn.active {
+        background: linear-gradient(
+            135deg,
+            #b2ff59,
+            #d4ff91
+        );
+        border-color: #64dd17;
+        color: #33691e;
+        box-shadow:
+            0 6px 0 #64dd17,
+            0 10px 20px rgba(100, 221, 23, 0.25);
 
-        .modal-content {
-            background-color: var(--modal-bg);
-            border: 8px solid var(--modal-border);
-            border-radius: 40px;
-            padding: 40px;
-            width: 90%;
-            max-width: 500px;
-            text-align: center;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.5), inset 0 0 0 6px rgba(255,255,255,0.5);
-            transform: scale(0.5);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-        }
-
-        .modal-overlay.active .modal-content {
-            transform: scale(1);
-        }
-
-        .modal-title {
-            font-family: 'Fredoka One', cursive;
-            font-size: 2.5rem;
-            color: #d84315;
-            margin-bottom: 25px;
-            text-shadow: 2px 2px 0 #ffcc80;
-        }
-
-        /* Nút đóng */
-        .close-btn {
-            background: #f44336;
-            color: white;
-            border: 4px solid white;
-            padding: 12px 40px;
-            font-size: 1.5rem;
-            font-family: 'Fredoka One', cursive;
-            border-radius: 30px;
-            box-shadow: 0 8px 0 #c62828;
-            cursor: pointer;
-            transition: 0.1s;
-        }
-        .close-btn:active {
-            transform: translateY(8px);
-            box-shadow: 0 0 0 transparent;
-        }
-
-
-        /* Chọn level*/
-        .level-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .level-btn {
-            font-family: 'Nunito', sans-serif;
-            font-weight: 800;
-            font-size: 1.4rem;
-            padding: 15px;
-            border-radius: 20px;
-            border: 4px solid #e0e0e0;
-            background: #fafafa;
-            color: #616161;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .level-btn:hover {
-            background: #e1f5fe;
-            transform: scale(1.03);
-        }
-
-        .level-btn.active {
-            background: #b2ff59;
-            border-color: #64dd17;
-            color: #33691e;
-            box-shadow: 0 5px 0 #64dd17;
-            transform: scale(1.05);
-        }
-
-
+        transform: scale(1.025);
+    }
+    /*HEADER LEVEL*/
+    .level-header {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+    }
+    .level-icon {
+        width: 48px;
+        height: 48px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border-radius: 15px;
+        font-size: 1.8rem;
+        box-shadow: 0 3px 0 rgba(0,0,0,0.12);
+    }
+    .level-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .level-name {
+        display: block;
+        font-size: 1.25rem;
+        font-weight: 900;
+        line-height: 1.2;
+        margin-bottom: 3px;
+    }
+    .level-description {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #757575;
+        line-height: 1.35;
+    }
+    .level-btn.active .level-description {
+        color: #558b2f;
+    }
+    /*TAG / CƠ CHẾ*/
+    .level-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 10px;
+    }
+    .level-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.8);
+        border: 2px solid rgba(0,0,0,0.06);
+        font-size: 0.72rem;
+        font-weight: 900;
+        color: #616161;
+    }
+    .level-btn.active .level-tag {
+        border-color: rgba(100,221,23,0.3);
+        color: #33691e;
+    }
+    /*SỐ LEVEL*/
+    .level-number {
+        position: absolute;
+        top: 12px;
+        right: 15px;
+        font-size: 0.75rem;
+        font-weight: 900;
+        color: #bdbdbd;
+    }
+    .level-btn.active .level-number {
+        color: #558b2f;
+    }
+    /*KHU VỰC ĐIỂM*/
+    .score-info {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin: 3px 0 22px;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+    }
+    .score-title {
+        color: #757575;
+        font-size: 0.9rem;
+    }
+    .score-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        border-radius: 12px;
+        background: #fff;
+        border: 2px solid #eeeeee;
+        font-size: 0.85rem;
+    }
+    .score-big {
+        font-size: 1.1rem;
+    }
+    .score-small {
+        font-size: 0.8rem;
+    }
+    /*NÚT XONG*/
+    .close-btn {
+        background: #f44336;
+        color: white;
+        border: 4px solid white;
+        padding: 12px 45px;
+        font-size: 1.4rem;
+        font-family: 'Fredoka One', cursive;
+        border-radius: 30px;
+        box-shadow: 0 7px 0 #c62828;
+        cursor: pointer;
+        transition: 0.1s;
+    }
+    .close-btn:hover {
+        filter: brightness(1.08);
+        transform: translateY(-2px);
+    }
+    .close-btn:active {
+        transform: translateY(7px);
+        box-shadow: 0 0 0 transparent;
+    }
 </style>
+<!--HỘP THOẠI CHỌN LEVEL-->
 
-<!-- Hộp thoại Chọn Level -->
-    <div class="modal-overlay" id="levelModal">
-        <div class="modal-content">
-            <h2 class="modal-title">CHỌN ĐỘ KHÓ</h2>
-            <div class="level-grid">
-                <div class="level-btn" onclick="selectLevel(this, 'easy')">
-                    <span>🌱 Dễ</span> <span>🐌</span>
-                </div>
-                <div class="level-btn active" onclick="selectLevel(this, 'medium')">
-                    <span>🏃 Trung Bình</span> <span>🐕</span>
-                </div>
-                <div class="level-btn" onclick="selectLevel(this, 'hard')">
-                    <span>🔥 Khó</span> <span>🐆</span>
+<div class="modal-overlay" id="levelModal">
+    <div class="modal-content">
+        <!-- TIÊU ĐỀ -->
+        <h2 class="modal-title">
+            CHỌN LEVEL
+        </h2>
+        <p class="modal-subtitle">
+            Mỗi màn chơi mang đến một thử thách mới! 🐍
+        </p>
+        <!--5 LEVEL-->
+        <div class="level-grid">
+            <!-- LEVEL 1 -->
+            <div
+                class="level-btn active"
+                onclick="selectLevel(this, 'level1')"
+            >
+                <span class="level-number">LEVEL 1</span>
+                <div class="level-header">
+                    <div class="level-icon">🐍</div>
+                    <div class="level-info">
+                        <span class="level-name">🌱 Khởi đầu</span>
+                        <span class="level-description">
+                            Snake cổ điển – làm quen với cách di chuyển và thu thập điểm.
+                        </span>
+                        <div class="level-tags">
+                            <span class="level-tag">⭐ Ô lớn: 10</span>
+                            <span class="level-tag">✨ Ô nhỏ: 20</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <button class="close-btn" onclick="closeModal('levelModal')">XONG</button>
+
+            <!-- LEVEL 2 -->
+            <div
+                class="level-btn"
+                onclick="selectLevel(this, 'level2')"
+            >
+                <span class="level-number">LEVEL 2</span>
+                <div class="level-header">
+                    <div class="level-icon">🧱</div>
+                    <div class="level-info">
+                        <span class="level-name">🧱 Chướng ngại</span>
+                        <span class="level-description">
+                            Chướng ngại vật xuất hiện, điểm số di chuyển và có buff hồi mạng.
+                        </span>
+                        <div class="level-tags">
+                            <span class="level-tag">🧱 Chướng ngại vật</span>
+                            <span class="level-tag">🔄 Điểm di chuyển</span>
+                            <span class="level-tag">❤️ +Mạng</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LEVEL 3 -->
+            <div
+                class="level-btn"
+                onclick="selectLevel(this, 'level3')"
+            >
+                <span class="level-number">LEVEL 3</span>
+                <div class="level-header">
+                    <div class="level-icon">🚪</div>
+                    <div class="level-info">
+                        <span class="level-name">🚪 Hai thế giới</span>
+                        <span class="level-description">
+                            Bản đồ bị chia đôi. Dùng cổng dịch chuyển để đi qua lại giữa hai khu vực.
+                        </span>
+                        <div class="level-tags">
+                            <span class="level-tag">🧱 Chướng ngại vật</span>
+                            <span class="level-tag">🚪 Cổng</span>
+                            <span class="level-tag">🛡️ Miễn trừ mạng</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LEVEL 4 -->
+            <div
+                class="level-btn"
+                onclick="selectLevel(this, 'level4')"
+            >
+                <span class="level-number">LEVEL 4</span>
+                <div class="level-header">
+                    <div class="level-icon">💥</div>
+                    <div class="level-info">
+                        <span class="level-name">💥 Tốc độ tử thần</span>
+                        <span class="level-description">
+                            Rắn không dài thêm khi ăn điểm nhưng tốc độ tăng dần. Đạn xuất hiện trên sân.
+                        </span>
+                        <div class="level-tags">
+                            <span class="level-tag">💥 Đạn</span>
+                            <span class="level-tag">⚡ Tăng tốc</span>
+                            <span class="level-tag">⏸️ Ngưng thời gian</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LEVEL 5 -->
+            <div
+                class="level-btn"
+                onclick="selectLevel(this, 'level5')"
+            >
+                <span class="level-number">LEVEL 5</span>
+                <div class="level-header">
+                    <div class="level-icon">🧲</div>
+                    <div class="level-info">
+                        <span class="level-name">🧲 Sinh tồn</span>
+                        <span class="level-description">
+                            Bản đồ thu hẹp dần. Thu thập buff để mở rộng bản đồ và hút điểm gần mình.
+                        </span>
+                        <div class="level-tags">
+                            <span class="level-tag">🔻 Thu hẹp map</span>
+                            <span class="level-tag">🔍 Phóng to map</span>
+                            <span class="level-tag">⏸️ Ngưng thời gian</span>
+                            <span class="level-tag">🧲 Nam châm</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+        <!--NÚT XONG-->
+        <button
+            class="close-btn"
+            onclick="closeModal('levelModal')"
+        >XONG</button>
     </div>
+</div>
+
