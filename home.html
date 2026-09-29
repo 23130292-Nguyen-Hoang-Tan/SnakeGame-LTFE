@@ -7,12 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --sky-color: #55b9f3;
-            --grass-color: #7cb342;
-            --grass-edge: #689f38;
-            --dirt-color: #8d6e63;
-            --dirt-dark: #5d4037;
-            
             --btn-green: #4caf50;
             --btn-green-shadow: #2e7d32;
             --btn-blue: #03a9f4;
@@ -39,30 +33,6 @@
                 linear-gradient(rgba(0,0,0,0.08), rgba(0,0,0,0.08)),
                 url('img/home-bg.jpg') center center / cover no-repeat;
             position: relative;
-        }
-        .cloud {
-            position: absolute;
-            background: white;
-            border-radius: 50px;
-            animation: float-cloud linear infinite;
-        }
-        .cloud::before, .cloud::after {
-            content: '';
-            position: absolute;
-            background: white;
-            border-radius: 50%;
-        }
-        .c1 { width: 150px; height: 50px; top: 10vh; left: -200px; animation-duration: 25s; }
-        .c1::before { width: 70px; height: 70px; top: -35px; left: 20px; }
-        .c1::after { width: 50px; height: 50px; top: -25px; right: 25px; }
-        
-        .c2 { width: 120px; height: 40px; top: 5vh; left: -150px; animation-duration: 35s; animation-delay: 10s; transform: scale(0.8); }
-        .c2::before { width: 60px; height: 60px; top: -30px; left: 15px; }
-        .c2::after { width: 40px; height: 40px; top: -20px; right: 15px; }
-
-        @keyframes float-cloud {
-            0% { transform: translateX(-200px); }
-            100% { transform: translateX(110vw); }
         }
         .scenery-item {
             position: absolute;
@@ -99,7 +69,6 @@
                 -4px -4px 0 #f57f17,  4px -4px 0 #f57f17,
                 -4px  4px 0 #f57f17,  4px  4px 0 #f57f17,
                  0 12px 0 #e65100, 0 20px 15px rgba(0,0,0,0.5);
-            animation: bounceIn 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             margin-bottom: 2vh;
             position: relative;
         }
@@ -119,11 +88,6 @@
             right: -50px;
             transform: rotate(15deg);
             filter: drop-shadow(0 5px 0 #1b5e20);
-        }
-        @keyframes bounceIn {
-            0% { transform: scale(0.1); opacity: 0; }
-            60% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(1); }
         }
         /* Hiệu ứng 3D cho nút bấm*/
         .btn-group {
@@ -161,12 +125,6 @@
             background-color: var(--btn-orange);
             box-shadow: 0 10px 0 var(--btn-orange-shadow), 0 20px 15px rgba(0,0,0,0.3);
         }
-        .btn:hover {
-            transform: translateY(3px);
-        }
-        .btn-play:hover { box-shadow: 0 7px 0 var(--btn-green-shadow), 0 15px 15px rgba(0,0,0,0.3); }
-        .btn-level:hover { box-shadow: 0 7px 0 var(--btn-blue-shadow), 0 15px 15px rgba(0,0,0,0.3); }
-        .btn-guide:hover { box-shadow: 0 7px 0 var(--btn-orange-shadow), 0 15px 15px rgba(0,0,0,0.3); }
         .btn:active {
             transform: translateY(10px);
             box-shadow: 0 0px 0 transparent !important;
@@ -179,9 +137,6 @@
     </style>
 </head>
 <body>
-
-    <div class="cloud c1"></div>
-    <div class="cloud c2"></div>
 
     <!-- Lớp giao diện (Chứa Tiêu đề và Nút bấm) -->
     <div class="ui-layer">
