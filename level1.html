@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Adventure - Level 1</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background-image: url("img/home-bg.jpg");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.18);
+            z-index: -1;
+        }
+
+        .game-container {
+            width: min(900px, 94vw);
+            text-align: center;
+        }
+
+        /*TIÊU ĐỀ*/
+        .game-title {
+            color: #fff;
+            font-size: 36px;
+            font-weight: 900;
+            margin-bottom: 12px;
+            text-shadow:
+                3px 3px 0 #5b351d,
+                0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .level-name {
+            display: block;
+            font-size: 20px;
+            margin-top: 4px;
+            color: #ffe082;
+            text-shadow: 2px 2px 0 #5b351d;
+        }
+        /*THÔNG TIN GAME*/
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 760px;
+            margin: 0 auto 10px;
+            padding: 10px 18px;
+            background: rgba(58, 35, 18, 0.85);
+            border: 4px solid #70421f;
+            border-radius: 12px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.25);
+        }
+        .score {
+            color: #ffe082;
+        }
+        .lives {
+            color: #ff8a80;
+        }
+        /*SÀN CHƠI*/
+        .board-wrapper {
+            display: inline-block;
+            border: 12px solid #70421f;
+            border-radius: 10px;
+            background: #70421f;
+            box-shadow:
+                0 8px 0 rgba(0, 0, 0, 0.3),
+                0 12px 25px rgba(0, 0, 0, 0.35);
+        }
+        canvas {
+            display: block;
+            background: #65a936;
+            width: 720px;
+            height: 480px;
+            max-width: 80vw;
+            max-height: 60vh;
+            image-rendering: pixelated;
+        }
+        .key {
+            display: inline-block;
+            min-width: 30px;
+            padding: 4px 7px;
+            margin: 0 2px;
+            background: #fff;
+            color: #333;
+            border-radius: 5px;
+            box-shadow: 0 3px 0 #aaa;
+        }
+        .pause-btn {
+            background: #d68910;
+        }
+        button {
+            border: none;
+            border-radius: 9px;
+            padding: 10px 22px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            color: white;
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.25);
+            transition: transform 0.1s;
+        }
+        button:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+        }
+        .restart-btn {
+            background: #e67e22;
+        }
+        .home-btn {
+            background: #3498db;
+        }
+        /*GAME OVER*/
+        .game-over {
+            position: fixed;
+            inset: 0;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.65);
+        }
+        .game-over-box {
+            width: min(400px, 90vw);
+            padding: 30px;
+            background: #fff8e7;
+            border: 7px solid #70421f;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+        .game-over-box h2 {
+            color: #d35400;
+            font-size: 34px;
+            margin-bottom: 12px;
+        }
+        .game-over-box p {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 18px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container">
+        <h1 class="game-title">
+            🐍 SNAKE ADVENTURE
+            <span class="level-name">LEVEL 1</span>
+        </h1>
+        <!-- Thông tin -->
+        <div class="game-info">
+            <div> Điểm:<span class="score" id="score">0</span></div>
+            <div>Mạng:<span class="lives" id="lives">❤️❤️❤️</span></div>
+        </div>
+        <!-- Sàn game -->
+        <div class="board-wrapper"><canvas id="gameCanvas" width="720" height="480"></canvas></div>
+        <!-- Nút dừng game -->
+        <div class="buttons">
+            <button class="pause-btn" onclick="togglePause()">
+                ⏸ DỪNG GAME
+            </button>
+        </div>
+    </div>
+
+    <!--GAME OVER-->
+    <div class="game-over" id="gameOver">
+        <div class="game-over-box">
+            <h2>GAME OVER</h2>
+            <p>
+                Điểm của bạn:
+                <strong id="finalScore">0</strong>
+            </p>
+            <button class="restart-btn" onclick="restartGame()">
+                🔄 CHƠI LẠI
+            </button>
+            <button class="home-btn" onclick="goHome()">
+                🏠 TRANG CHỦ
+            </button>
+        </div>
+    </div>
+    <script>
+        // CANVAS
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const GRID_SIZE = 24;
+        const COLS = canvas.width / GRID_SIZE;
+        const ROWS = canvas.height / GRID_SIZE;
+
+
+        // GAME VARIABLES
+        let snake;
+        let direction;
+        let nextDirection;
+        let food;
+        let score = 0;
+        let lives = 3;
+        let gameRunning = true;
+        let gameLoop;
+        let isPaused = false;
+
+        // KHỞI TẠO GAME
+        function initGame() {
+            snake = [
+                {x: 10,y: 10},
+                {x: 9,y: 10},
+                { x: 8,y: 10}
+            ];
+            direction = {x: 1,y: 0};
+            nextDirection = {x: 1,y: 0};
+            score = 0;
+            lives = 3;
+            gameRunning = true;
+            updateInfo();
+            createFood();
+            document.getElementById("gameOver").style.display = "none";
+            clearInterval(gameLoop);
+            gameLoop = setInterval(updateGame, 120);
+            drawGame();
+        }
+
+        // DỪNG/ TIẾP TỤC GAME
+        function togglePause() {
+            if (!gameRunning) {
+                return;
+            }
+            isPaused = !isPaused;
+            const pauseButton = document.querySelector(".pause-btn");
+            if (isPaused) {
+                pauseButton.textContent = "▶ TIẾP TỤC";
+            } else {
+                pauseButton.textContent = "⏸ DỪNG GAME";
+            }
+        }
+
+        // TẠO THỨC ĂN
+        function createFood() {
+            let validPosition = false;
+            while (!validPosition) {
+                const x = Math.floor(Math.random() * COLS);
+                const y = Math.floor(Math.random() * ROWS);
+                const onSnake = snake.some(
+                    segment => segment.x === x && segment.y === y
+                );
+                if (!onSnake) {
+                    food = {x: x,y: y,value: Math.random() < 0.7 ? 10 : 20};
+                    validPosition = true;
+                }
+            }
+        }
+
+        // CẬP NHẬT GAME
+        function updateGame() {
+            if (!gameRunning || isPaused) {
+                return;
+            }
+            direction = nextDirection;
+            const head = {
+                x: snake[0].x + direction.x,
+                y: snake[0].y + direction.y
+            };
+
+            // KIỂM TRA VA CHẠM TƯỜNG
+            if (
+                head.x < 0 ||
+                head.x >= COLS ||
+                head.y < 0 ||
+                head.y >= ROWS
+            ) {
+                loseLife();
+                return;
+            }
+
+            // KIỂM TRA CẮN VÀO THÂN
+            const hitSelf = snake.some(
+                segment =>
+                    segment.x === head.x &&
+                    segment.y === head.y
+            );
+            if (hitSelf) {
+                loseLife();
+                return;
+            }
+
+            // Thêm đầu mới
+            snake.unshift(head);
+            // ĂN THỨC ĂN
+            if (head.x === food.x && head.y === food.y
+            ) {
+                score += food.value;
+                createFood();
+            } else {
+                // Không ăn thì bỏ đuôi
+                snake.pop();
+            }
+            updateInfo();
+            drawGame();
+        }
+
+        // MẤT MẠNG
+        function loseLife() {
+            lives--;
+            updateInfo();
+            if (lives <= 0) {
+                endGame();
+                return;
+            }
+            // Reset vị trí rắn
+            snake = [
+                {x: 10,y: 10},
+                {x: 9,y: 10},
+                {x: 8,y: 10}
+            ];
+            direction = {x: 1,y: 0};
+            nextDirection = {x: 1,y: 0};
+            createFood();
+            drawGame();
+        }
+
+        // GAME OVER
+        function endGame() {
+            gameRunning = false;
+            clearInterval(gameLoop);
+            document.getElementById("finalScore").textContent = score;
+            document.getElementById("gameOver").style.display = "flex";
+        }
+
+        // VẼ GAME
+        function drawGame() {
+            // Xóa canvas
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            // NỀN SÀN
+            ctx.fillStyle = "#65a936";
+            ctx.fillRect(0,0, canvas.width, canvas.height);
+
+            // Ô LƯỚI NHẸ
+            ctx.strokeStyle = "rgba(255,255,255,0.08)";
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= canvas.width; x += GRID_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= canvas.height; y += GRID_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // THỨC ĂN
+            drawFood();
+            // RẮN
+            drawSnake();
+        }
+
+        // VẼ RẮN
+        function drawSnake() {
+            snake.forEach((segment, index) => {
+                const x = segment.x * GRID_SIZE;
+                const y = segment.y * GRID_SIZE;
+                if (index === 0) {
+                    // Đầu rắn
+                    ctx.fillStyle = "#ffcc00";
+                    ctx.fillRect(
+                        x + 2,
+                        y + 2,
+                        GRID_SIZE - 4,
+                        GRID_SIZE - 4
+                    );
+                } else {
+                    // Thân rắn
+                    ctx.fillStyle = "#ff8c00";
+                    ctx.fillRect(
+                        x + 3,
+                        y + 3,
+                        GRID_SIZE - 6,
+                        GRID_SIZE - 6
+                    );
+                }
+            });
+        }
+
+        // VẼ THỨC ĂN
+        function drawFood() {
+            const x = food.x * GRID_SIZE;
+            const y = food.y * GRID_SIZE;
+            if (food.value === 10) {
+                // Ô lớn - 10 điểm
+                ctx.fillStyle = "#e74c3c";
+                ctx.fillRect(
+                    x + 3,
+                    y + 3,
+                    GRID_SIZE - 6,
+                    GRID_SIZE - 6
+                );
+            } else {
+                // Ô nhỏ - 20 điểm
+                ctx.fillStyle = "#9b59b6";
+                ctx.fillRect(
+                    x + 7,
+                    y + 7,
+                    GRID_SIZE - 14,
+                    GRID_SIZE - 14
+                );
+            }
+        }
+
+        // ĐIỀU KHIỂN
+        document.addEventListener("keydown", function(event) {
+            const key = event.key.toLowerCase();
+            // Lên
+            if (key === "arrowup" ||key === "w") {
+                if (direction.y !== 1) {
+                    nextDirection = {x: 0,y: -1};
+                }
+            }
+            // Xuống
+            else if (key === "arrowdown" ||key === "s") {
+                if (direction.y !== -1) {
+                    nextDirection = {x: 0,y: 1};
+                }
+            }
+            // Trái
+            else if (key === "arrowleft" ||key === "a") {
+                if (direction.x !== 1) {
+                    nextDirection = {x: -1,y: 0};
+                }
+            }
+            // Phải
+            else if (key === "arrowright" ||key === "d") {
+                if (direction.x !== -1) {
+                    nextDirection = {x: 1,y: 0};
+                }
+            }
+            // Không cho phím mũi tên cuộn trang
+            if (
+                key === "arrowup" ||
+                key === "arrowdown" ||
+                key === "arrowleft" ||
+                key === "arrowright"
+            ) {
+                event.preventDefault();
+            }
+
+        });
+
+        // CẬP NHẬT THÔNG TIN
+        function updateInfo() {
+            document.getElementById("score").textContent = score;
+            document.getElementById("lives").textContent =
+                "❤️".repeat(lives);
+        }
+        // CHƠI LẠI
+       function restartGame() {
+            isPaused = false;
+            initGame();
+
+            document.querySelector(".pause-btn").textContent = "⏸ DỪNG GAME";
+        }
+        // VỀ TRANG CHỦ
+        function goHome() {
+            window.location.href = "home.html";
+        }
+        // START GAME
+        initGame();
+    </script>
+</body>
+</html>

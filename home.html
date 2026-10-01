@@ -83,9 +83,9 @@
         }
         .snake-icon {
             position: absolute;
-            font-size: 7rem;
+            font-size: 8rem;
             top: -20px;
-            right: -50px;
+            right: 40px;
             transform: rotate(15deg);
             filter: drop-shadow(0 5px 0 #1b5e20);
         }
@@ -156,81 +156,148 @@
         </div>
     </div>
 
+<script>
+    // LEVEL HIỆN TẠI
+    // Mặc định khi mở game là Level 1
+    let selectedLevel = 'level1';
 
-    <script>
-        // Nạp 2 hộp thoại từ file riêng
-        async function loadModals() {
-            try {
-                const [levelResponse, instructionResponse] = await Promise.all([
+    // NẠP MODAL
+    async function loadModals() {
+        try {
+            const [levelResponse, instructionResponse] =
+                await Promise.all([
                     fetch('level.html'),
                     fetch('guide.html')
                 ]);
-
-                if (!levelResponse.ok || !instructionResponse.ok) {
-                    throw new Error('Không thể tải file modal.');
-                }
-
-                document.getElementById('levelModalContainer').innerHTML =
-                    await levelResponse.text();
-
-                document.getElementById('instructionModalContainer').innerHTML =
-                    await instructionResponse.text();
-
-            } catch (error) {
-                console.error('Lỗi khi tải modal:', error);
+            if (!levelResponse.ok || !instructionResponse.ok) {
+                throw new Error('Không thể tải file modal.');
             }
+            document.getElementById('levelModalContainer').innerHTML =
+                await levelResponse.text();
+            document.getElementById('instructionModalContainer').innerHTML =
+                await instructionResponse.text();
+
+            // Đọc level đã lưu
+            const savedLevel =
+                localStorage.getItem('selectedLevel');
+
+            if (
+                savedLevel &&
+                ['level1', 'level2', 'level3', 'level4', 'level5']
+                    .includes(savedLevel)
+            ) {
+                selectedLevel = savedLevel;
+            }
+
+            // Đánh dấu level đang được chọn
+            updateSelectedLevel();
+        } catch (error) {
+            console.error(
+                'Lỗi khi tải modal:',
+                error
+            );
+        }
+    }
+    document.addEventListener(
+        'DOMContentLoaded',
+        loadModals
+    );
+
+    // CẬP NHẬT LEVEL ĐANG CHỌN TRÊN MODAL
+    function updateSelectedLevel() {
+        const buttons =
+            document.querySelectorAll('.level-btn');
+        buttons.forEach(button => {
+            button.classList.remove('active');
+            // Lấy level từ onclick
+            const onclickValue =
+                button.getAttribute('onclick');
+            if (
+                onclickValue &&
+                onclickValue.includes(
+                    `'${selectedLevel}'`
+                )
+            ) {
+                button.classList.add('active');
+            }
+        });
+    }
+
+    // MỞ MODAL
+    function openModal(modalId) {
+        const modal =
+            document.getElementById(modalId);
+        if (!modal) {
+            console.error(
+                'Không tìm thấy modal:',
+                modalId
+            );
+            return;
+        }
+        modal.classList.add('active');
+    }
+
+    // ĐÓNG MODAL
+    function closeModal(modalId) {
+        const modal =
+            document.getElementById(modalId);
+        if (!modal) return;
+        modal.classList.remove('active');
+    }
+
+    // CHỌN LEVEL
+    function selectLevel(element, level) {
+        // Chỉ cho phép 5 level hợp lệ
+        const validLevels = [
+            'level1',
+            'level2',
+            'level3',
+            'level4',
+            'level5'
+        ];
+
+        if (!validLevels.includes(level)) {
+            console.error(
+                'Level không hợp lệ:',
+                level
+            );
+            return;
         }
 
-        document.addEventListener('DOMContentLoaded', loadModals);
+        // Lưu level hiện tại
+        selectedLevel = level;
+        localStorage.setItem(
+            'selectedLevel',
+            selectedLevel
+        );
 
-        // Mở hộp thoại (Modal)
-        function openModal(modalId) {
-            document.getElementById(modalId).classList.add('active');
-        }
+        // Xóa active ở tất cả level
+        const buttons =
+            document.querySelectorAll('.level-btn');
+        buttons.forEach(button => {
+            button.classList.remove('active');
+        });
 
-        // Đóng hộp thoại (Modal)
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
+        // Active level vừa chọn
+        element.classList.add('active');
+        console.log(
+            'Đã chọn:',
+            selectedLevel
+        );
+    }
 
-        // Xử lý chọn Level
-        function selectLevel(element, level) {
-            // Xóa class 'active' khỏi các nút khác
-            const btns = document.querySelectorAll('.level-btn');
-            btns.forEach(btn => {
-                btn.classList.remove('active');
-                // Reset box-shadow cho các nút không active
-                btn.style.boxShadow = 'none';
-            });
-            
-            // Thêm class 'active' cho nút được chọn
-            element.classList.add('active');
-            
-            // Lưu level được chọn vào bộ nhớ hoặc log ra console
-            console.log("Đã chọn độ khó:", level);
-        }
+    // NÚT CHƠI
+    function playGame() {
+    localStorage.setItem('selectedLevel', selectedLevel);
 
-        // Xử lý nút Chơi
-        function playGame() {
-            const ui = document.querySelector('.ui-content');
-            
-            // Hiệu ứng "bay đi" trước khi vào game
-            ui.style.transition = 'transform 0.5s cubic-bezier(0.55, 0.085, 0.68, 0.53), opacity 0.5s';
-            ui.style.transform = 'translateY(-100vh) scale(0.5)';
-            ui.style.opacity = '0';
-            
-            setTimeout(() => {
-                // Thay thế UI bằng màn hình đang tải (sau này bạn có thể chèn Canvas Game vào đây)
-                ui.style.transform = 'translateY(0) scale(1)';
-                ui.style.opacity = '1';
-                ui.innerHTML = `
-                    <h1 class="game-title" style="font-size: 4rem; color: #fff;">
-                        ĐANG VÀO GAME...
-                    </h1>
-                `;
-            }, 600);
-        }
-    </script>
+    closeModal('levelModal');
+
+    if (selectedLevel === 'level1') {
+        window.location.href = 'level1.html';
+    }
+}
+</script>
+
 </body>
 </html>    <!-- Các hộp thoại được tách thành file riêng -->
     <div id="levelModalContainer"></div>
