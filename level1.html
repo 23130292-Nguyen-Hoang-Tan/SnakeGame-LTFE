@@ -12,23 +12,14 @@
     <script>
         const levelConfig = {
             level: "level1",
-            // Tốc độ rắn
             speed: 120,
-            // 3 mạng
             lives: 3,
-            // Có tăng chiều dài khi ăn
             growSnake: true,
-            // Thức ăn
             food10: true,
-            food20: true,
-            // Không có chướng ngại vật
             obstacles: false,
-            // Không có đạn
-            bullets: false,
-            // Không có portal
+            bulletCount: 0,
             portals: false
         };
-        /*Lưu cấu hình để game.html đọc*/
         localStorage.setItem(
             "snakeLevelConfig",
             JSON.stringify(levelConfig)

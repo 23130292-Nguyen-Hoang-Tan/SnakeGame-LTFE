@@ -149,13 +149,13 @@
                 <button class="btn btn-level" onclick="openModal('levelModal')">
                     <span>⭐</span> CHỌN LEVEL
                 </button>
-                <button class="btn btn-guide" onclick="openModal('instructionModal')">
-                    <span>📖</span> HƯỚNG DẪN
-                </button>
             </div>
         </div>
     </div>
 
+    <!-- Modal -->
+    <div id="levelModalContainer"></div>
+</body>
 <script>
     // LEVEL HIỆN TẠI
     // Mặc định khi mở game là Level 1
@@ -164,33 +164,21 @@
     // NẠP MODAL
     async function loadModals() {
         try {
-            const [levelResponse, instructionResponse] =
-                await Promise.all([
-                    fetch('level.html'),
-                    fetch('guide.html')
-                ]);
-            if (!levelResponse.ok || !instructionResponse.ok) {
-                throw new Error('Không thể tải file modal.');
+            const levelResponse = await fetch('level.html');
+            if (!levelResponse.ok) {
+                throw new Error('Không thể tải level.html');
             }
-            document.getElementById('levelModalContainer').innerHTML =
-                await levelResponse.text();
-            document.getElementById('instructionModalContainer').innerHTML =
-                await instructionResponse.text();
-
+            // Nạp level modal
+            const levelHTML = await levelResponse.text();
+            document.getElementById('levelModalContainer').innerHTML = levelHTML;
             // Đọc level đã lưu
-            const savedLevel =
-                localStorage.getItem('selectedLevel');
-
-            if (
-                savedLevel &&
-                ['level1', 'level2', 'level3', 'level4', 'level5']
-                    .includes(savedLevel)
-            ) {
+            const savedLevel = localStorage.getItem('selectedLevel');
+            if ( savedLevel && ['level1', 'level2', 'level3', 'level4', 'level5'].includes(savedLevel)) {
                 selectedLevel = savedLevel;
             }
-
-            // Đánh dấu level đang được chọn
+            // Đánh dấu level hiện tại
             updateSelectedLevel();
+            console.log('Đã tải modal level.');
         } catch (error) {
             console.error(
                 'Lỗi khi tải modal:',
@@ -198,26 +186,20 @@
             );
         }
     }
-    document.addEventListener(
-        'DOMContentLoaded',
-        loadModals
-    );
+
+document.addEventListener(
+    'DOMContentLoaded',
+    loadModals
+);
 
     // CẬP NHẬT LEVEL ĐANG CHỌN TRÊN MODAL
     function updateSelectedLevel() {
         const buttons =
             document.querySelectorAll('.level-btn');
-        buttons.forEach(button => {
-            button.classList.remove('active');
-            // Lấy level từ onclick
-            const onclickValue =
-                button.getAttribute('onclick');
-            if (
-                onclickValue &&
-                onclickValue.includes(
-                    `'${selectedLevel}'`
-                )
-            ) {
+        buttons.forEach(button => {button.classList.remove('active');
+            // Lấy level
+            const onclickValue = button.getAttribute('onclick');
+            if (onclickValue &&onclickValue.includes(`'${selectedLevel}'`)) {
                 button.classList.add('active');
             }
         });
@@ -225,16 +207,13 @@
 
     // MỞ MODAL
     function openModal(modalId) {
-        const modal =
-            document.getElementById(modalId);
+        const modal = document.getElementById(modalId);
         if (!modal) {
-            console.error(
-                'Không tìm thấy modal:',
-                modalId
-            );
+            console.error('Modal chưa được tải:', modalId);
             return;
         }
         modal.classList.add('active');
+        console.log('Đã mở modal:', modalId);
     }
 
     // ĐÓNG MODAL
@@ -247,58 +226,44 @@
 
     // CHỌN LEVEL
     function selectLevel(element, level) {
-        // Chỉ cho phép 5 level hợp lệ
-        const validLevels = [
-            'level1',
-            'level2',
-            'level3',
-            'level4',
-            'level5'
-        ];
-
+        const validLevels = ['level1', 'level2', 'level3', 'level4', 'level5'];
         if (!validLevels.includes(level)) {
-            console.error(
-                'Level không hợp lệ:',
-                level
-            );
+            console.error('Level không hợp lệ:', level);
             return;
         }
-
-        // Lưu level hiện tại
+        // Lưu level được chọn
         selectedLevel = level;
-        localStorage.setItem(
-            'selectedLevel',
-            selectedLevel
-        );
-
+        localStorage.setItem('selectedLevel', selectedLevel);
         // Xóa active ở tất cả level
-        const buttons =
-            document.querySelectorAll('.level-btn');
-        buttons.forEach(button => {
-            button.classList.remove('active');
-        });
-
+        const buttons = document.querySelectorAll('.level-btn');
+        buttons.forEach(button => {button.classList.remove('active');});
         // Active level vừa chọn
         element.classList.add('active');
-        console.log(
-            'Đã chọn:',
-            selectedLevel
-        );
+        console.log('Đã chọn:', selectedLevel);
     }
 
     // NÚT CHƠI
     function playGame() {
-    localStorage.setItem('selectedLevel', selectedLevel);
-
-    closeModal('levelModal');
-
-    if (selectedLevel === 'level1') {
-        window.location.href = 'level1.html';
+        // Lưu level hiện tại
+        localStorage.setItem('selectedLevel', selectedLevel);
+        // Đóng modal nếu đang mở
+        closeModal('levelModal');
+        // Chuyển đến file cấu hình tương ứng
+        if (selectedLevel === 'level1') {
+            window.location.href = 'level1.html';
+        }
+        else if (selectedLevel === 'level2') {
+            window.location.href = 'level2.html';
+        }
+        else if (selectedLevel === 'level3') {
+            window.location.href = 'level3.html';
+        }
+        else if (selectedLevel === 'level4') {
+            window.location.href = 'level4.html';
+        }
+        else if (selectedLevel === 'level5') {
+            window.location.href = 'level5.html';
+        }
     }
-}
 </script>
-
-</body>
-</html>    <!-- Các hộp thoại được tách thành file riêng -->
-    <div id="levelModalContainer"></div>
-    <div id="instructionModalContainer"></div>
+</html>

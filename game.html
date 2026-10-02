@@ -181,27 +181,6 @@
         .home-btn {
             background: #3498db;
         }
-        /*MOBILE*/
-        @media (max-width: 700px) {
-            .game-title {
-                font-size: 28px;
-            }
-            .level-name {
-                font-size: 17px;
-            }
-            .game-info {
-                font-size: 14px;
-                padding: 8px 10px;
-            }
-            canvas {
-                width: 90vw;
-                height: 60vw;
-                max-height: 55vh;
-            }
-            .controls {
-                font-size: 13px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -270,6 +249,8 @@
         let gameRunning = true;
         let gameLoop;
         let isPaused = false;
+        let obstacles = [];
+        let snakeVisible = true;
 
         // HIỂN THỊ LEVEL
         document.getElementById("levelName")
@@ -297,6 +278,8 @@
             clearInterval(gameLoop);
             gameLoop =setInterval(updateGame,levelConfig.speed || 120);
             drawGame();
+            createObstacles();
+            createFood();
         }
 
         // DỪNG / TIẾP TỤC
@@ -318,11 +301,11 @@
         function createFood() {
             let validPosition = false;
             while (!validPosition) {
-                const x =Math.floor(Math.random() * COLS);
-                const y =Math.floor(Math.random() * ROWS);
-                const onSnake =snake.some(segment =>segment.x === x &&segment.y === y);
+                const x = Math.floor(Math.random() * COLS);
+                const y = Math.floor(Math.random() * ROWS);
+                const onSnake = snake.some(segment => segment.x === x && segment.y === y);
                 if (!onSnake) {
-                    food = {x: x, y: y, value: Math.random() < 0.7? 10: 20};
+                    food = {x: x,y: y,value: 10};
                     validPosition = true;
                 }
             }
@@ -347,6 +330,19 @@
             // VA CHẠM THÂN
             const hitSelf = snake.some(segment =>segment.x === head.x &&segment.y === head.y);
             if (hitSelf) {
+                loseLife();
+                return;
+            }
+
+            // VA CHẠM ĐỊA HÌNH
+            const hitObstacle = obstacles.some(obstacle =>
+                head.x >= obstacle.x &&
+                head.x < obstacle.x + obstacle.width &&
+                head.y >= obstacle.y &&
+                head.y < obstacle.y + obstacle.height
+            );
+
+            if (hitObstacle) {
                 loseLife();
                 return;
             }
@@ -413,6 +409,7 @@
             }
             drawFood();
             drawSnake();
+            drawObstacles();
         }
 
         // DRAW SNAKE
@@ -437,17 +434,10 @@
 
         // DRAW FOOD
         function drawFood() {
-            const x =food.x *GRID_SIZE;
-            const y =food.y *GRID_SIZE;
-            if (food.value === 10) {
-                // Ô LỚN - 10 ĐIỂM
-                ctx.fillStyle ="#e74c3c";
-                ctx.fillRect(x + 3, y + 3, GRID_SIZE - 6, GRID_SIZE - 6);
-            } else {
-                // Ô NHỎ - 20 ĐIỂM
-                ctx.fillStyle = "#9b59b6";
-                ctx.fillRect(x + 7, y + 7,GRID_SIZE - 14,GRID_SIZE - 14);
-            }
+            const x = food.x * GRID_SIZE;
+            const y = food.y * GRID_SIZE;
+            ctx.fillStyle = "#FFD700";
+            ctx.fillRect(x + 3,y + 3,GRID_SIZE - 6,GRID_SIZE - 6);
         }
 
         // ĐIỀU KHIỂN
@@ -489,6 +479,64 @@
                 }
             }
         );
+
+        // TẠO ĐỊA HÌNH
+        function createObstacles() {
+            obstacles = [];
+            // Level 1 không có địa hình
+            if (!levelConfig.obstacles) {
+                return;
+            }
+            const count = levelConfig.obstacleCount || 4;
+            const size = levelConfig.obstacleSize || 4;
+            let attempts = 0;
+            while (obstacles.length < count && attempts < 1000) {
+                attempts++;
+                // Đảm bảo địa hình 4x4 không vượt khỏi board
+                const x = Math.floor( Math.random() * (COLS - size));
+                const y = Math.floor( Math.random() * (ROWS - size));
+                const newObstacle = {x: x, y: y, width: size, height: size};
+                // Không để địa hình đè lên rắn
+                const overlapsSnake = snake.some(segment =>
+                    segment.x >= newObstacle.x &&
+                    segment.x < newObstacle.x + newObstacle.width &&
+                    segment.y >= newObstacle.y &&
+                    segment.y < newObstacle.y + newObstacle.height
+                );
+                if (overlapsSnake) {
+                    continue;
+                }
+                // Không để các địa hình đè lên nhau
+                const overlapsObstacle = obstacles.some(obstacle =>
+                    newObstacle.x < obstacle.x + obstacle.width &&
+                    newObstacle.x + newObstacle.width > obstacle.x &&
+                    newObstacle.y < obstacle.y + obstacle.height &&
+                    newObstacle.y + newObstacle.height > obstacle.y
+                );
+                if (overlapsObstacle) {
+                    continue;
+                }
+                obstacles.push(newObstacle);
+            }
+        }
+
+        // VẼ ĐỊA HÌNH
+        function drawObstacles() {
+            obstacles.forEach(obstacle => {
+                const x = obstacle.x * GRID_SIZE;
+                const y = obstacle.y * GRID_SIZE;
+                const width = obstacle.width * GRID_SIZE;
+                const height = obstacle.height * GRID_SIZE;
+                // Mặt địa hình
+                ctx.fillStyle = "#8B5A2B";
+                ctx.fillRect(x, y, width, height);
+
+                // Viền nâu đậm
+                ctx.strokeStyle = "#4A2A14";
+                ctx.lineWidth = 4;
+                ctx.strokeRect( x + 2, y + 2, width - 4, height - 4);
+            });
+        }
   
         // UPDATE INFO
         function updateInfo() {
