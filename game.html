@@ -261,27 +261,28 @@
                 .toUpperCase();
 
         // KHỞI TẠO GAME
+        // KHỞI TẠO GAME
         function initGame() {
             snake = [
-                {x: 10,y: 10},
-                {x: 9,y: 10},
-                {x: 8,y: 10}
+                { x: 10, y: 10 },
+                { x: 9, y: 10 },
+                { x: 8, y: 10 }
             ];
-            direction = {x: 1,y: 0};
-            nextDirection = {x: 1,y: 0};
+            direction = { x: 1, y: 0 };
+            nextDirection = { x: 1, y: 0 };
             score = 0;
             lives = levelConfig.lives || 3;
             gameRunning = true;
             isPaused = false;
-            updateInfo();
+            snakeVisible = true;
+            createObstacles();
             createFood();
+            updateInfo();
             document.getElementById("gameOver").style.display = "none";
             document.querySelector(".pause-btn").textContent = "⏸ DỪNG GAME";
             clearInterval(gameLoop);
-            gameLoop =setInterval(updateGame,levelConfig.speed || 120);
+            gameLoop = setInterval(updateGame, levelConfig.speed || 120);
             drawGame();
-            createObstacles();
-            createFood();
         }
 
         // DỪNG / TIẾP TỤC
@@ -302,14 +303,28 @@
         // TẠO THỨC ĂN
         function createFood() {
             let validPosition = false;
-            while (!validPosition) {
+            let attempts = 0;
+            while (!validPosition && attempts < 1000) {
+                attempts++;
                 const x = Math.floor(Math.random() * COLS);
                 const y = Math.floor(Math.random() * ROWS);
+                // Không spawn trên rắn
                 const onSnake = snake.some(segment => segment.x === x && segment.y === y);
-                if (!onSnake) {
-                    food = {x: x,y: y,value: 10};
-                    validPosition = true;
+                if (onSnake) {
+                    continue;
                 }
+                // Không spawn trên địa hình
+                const onObstacle = obstacles.some(obstacle =>
+                    x >= obstacle.x &&
+                    x < obstacle.x + obstacle.width &&
+                    y >= obstacle.y &&
+                    y < obstacle.y + obstacle.height
+                );
+                if (onObstacle) {
+                    continue;
+                }
+                food = {x: x,y: y,value: 10};
+                validPosition = true;
             }
         }
 
@@ -354,6 +369,12 @@
             //ĂN THỨC ĂN
             if (head.x === food.x && head.y === food.y) {
                 score += food.value;
+                createFood();
+                // Đủ 150 điểm → sang level tiếp theo
+                if (score >= 150) {
+                    checkNextLevel();
+                    return;
+                }
                 createFood();
             } else {
                 snake.pop();
@@ -457,10 +478,7 @@
                 else if (key === "arrowdown" || key === "s"
                 ) {
                     if (direction.y !== -1) {
-                        nextDirection = {
-                            x: 0,
-                            y: 1
-                        };
+                        nextDirection = {x: 0, y: 1};
                     }
                 }
                 // TRÁI
@@ -538,6 +556,29 @@
                 ctx.lineWidth = 4;
                 ctx.strokeRect( x + 2, y + 2, width - 4, height - 4);
             });
+        }
+
+        // QUA LEVEL TIẾP THEO
+        function checkNextLevel() {
+            if (score < 150) return;
+            const currentLevel = levelConfig.level;
+            if (currentLevel === "level1") {
+                window.location.href = "level2.html";
+            }
+            else if (currentLevel === "level2") {
+                window.location.href = "level3.html";
+            }
+            else if (currentLevel === "level3") {
+                window.location.href = "level4.html";
+            }
+            else if (currentLevel === "level4") {
+                window.location.href = "level5.html";
+            }
+            else if (currentLevel === "level5") {
+                // Hoàn thành game
+                alert("Chúc mừng! Bạn đã hoàn thành tất cả các level!");
+                window.location.href = "home.html";
+            }
         }
   
         // UPDATE INFO
