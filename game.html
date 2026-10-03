@@ -191,17 +191,17 @@
             🐍 SNAKE ADVENTURE
             <span class="level-name" id="levelName">LEVEL 1</span>
         </h1>
-        <!-- SCORE + LIVES -->
+        <!-- ĐIỂM + MẠNG -->
         <div class="game-info">
             <div> Điểm: <span class="score" id="score"> 0 </span></div>
             <div> Mạng: <span class="lives" id="lives"> ❤️❤️❤️ </span></div>
         </div>
 
-        <!-- GAME BOARD -->
+        <!-- SÂN CHƠI -->
         <div class="board-wrapper">
             <canvas id="gameCanvas" width="720" height="480"></canvas>
         </div>
-        <!-- PAUSE -->
+        <!-- DỪNG -->
         <div class="buttons">
             <button class="pause-btn" onclick="togglePause()">⏸ DỪNG GAME</button>
         </div>
@@ -241,7 +241,7 @@
         const COLS =canvas.width / GRID_SIZE;
         const ROWS =canvas.height / GRID_SIZE;
 
-        // GAME VARIABLES
+        // BIẾN GAME
         let snake;
         let direction;
         let nextDirection;
@@ -253,6 +253,9 @@
         let isPaused = false;
         let obstacles = [];
         let snakeVisible = true;
+        let lifeBuff = null;
+        let lifeBuffSpawned = false;
+        let lifeBuffCollected = false;
 
         // HIỂN THỊ LEVEL
         document.getElementById("levelName")
@@ -260,7 +263,6 @@
             String(levelConfig.level || "level1")
                 .toUpperCase();
 
-        // KHỞI TẠO GAME
         // KHỞI TẠO GAME
         function initGame() {
             snake = [
@@ -275,6 +277,9 @@
             gameRunning = true;
             isPaused = false;
             snakeVisible = true;
+            lifeBuff = null;
+            lifeBuffSpawned = false;
+            lifeBuffCollected = false;
             createObstacles();
             createFood();
             updateInfo();
@@ -328,6 +333,52 @@
             }
         }
 
+        // TẠO BUFF HỒI MẠNG - CHỈ LEVEL 2
+        function createLifeBuff() {
+            // Chỉ Level 2 mới có buff
+            if (levelConfig.level === "level1") {
+                return;
+            }
+            // Buff chỉ được tạo đúng 1 lần
+            if (lifeBuffSpawned) {
+                return;
+            }
+            let validPosition = false;
+            let attempts = 0;
+            while (!validPosition && attempts < 1000) {
+                attempts++;
+                const x = Math.floor(Math.random() * COLS);
+                const y = Math.floor(Math.random() * ROWS);
+                // Không spawn trên rắn
+                const onSnake = snake.some(
+                    segment =>
+                        segment.x === x &&
+                        segment.y === y
+                );
+                if (onSnake) {
+                    continue;
+                }
+                // Không spawn trên địa hình
+                const onObstacle = obstacles.some(obstacle =>
+                    x >= obstacle.x &&
+                    x < obstacle.x + obstacle.width &&
+                    y >= obstacle.y &&
+                    y < obstacle.y + obstacle.height
+                );
+                if (onObstacle) {
+                    continue;
+                }
+                // Không spawn trùng thức ăn
+                if (food && food.x === x && food.y === y) {
+                    continue;
+                }
+                // Vị trí hợp lệ
+                lifeBuff = {x: x,y: y};
+                lifeBuffSpawned = true;
+                validPosition = true;
+            }
+        }
+
         // UPDATE GAME
         function updateGame() {
             if (!gameRunning || isPaused) {
@@ -368,10 +419,14 @@
             snake.unshift(head);
             //ĂN THỨC ĂN
             if (head.x === food.x && head.y === food.y) {
+
                 score += food.value;
-                createFood();
-                // Đủ 150 điểm → sang level tiếp theo
-                if (score >= 150) {
+                // LEVEL 2:
+                if (levelConfig.level === "level1" &&score >= 100 &&!lifeBuffSpawned) {
+                    createLifeBuff();
+                }
+                // Kiểm tra sang level tiếp theo
+                if (score >= 150) { 
                     checkNextLevel();
                     return;
                 }
@@ -379,6 +434,17 @@
             } else {
                 snake.pop();
             }
+            // ĂN BUFF HỒI MẠNG
+        if (levelConfig.level === "level1" &&lifeBuff && head.x === lifeBuff.x && head.y === lifeBuff.y) {
+            // Hồi 1 mạng
+            lives++;
+            // Cập nhật giao diện
+            updateInfo();
+            // Buff biến mất
+            lifeBuff = null;
+            lifeBuffCollected = true;
+            console.log("Đã ăn buff hồi mạng! +1 mạng");
+        }
             updateInfo();
             drawGame();
         }
@@ -433,6 +499,7 @@
             drawFood();
             drawSnake();
             drawObstacles();
+            drawLifeBuff();
         }
 
         // DRAW SNAKE
@@ -461,6 +528,23 @@
             const y = food.y * GRID_SIZE;
             ctx.fillStyle = "#FFD700";
             ctx.fillRect(x + 3,y + 3,GRID_SIZE - 6,GRID_SIZE - 6);
+        }
+
+        // DRAW BUFF HỒI MẠNG
+        function drawLifeBuff() {
+            if (levelConfig.level === "level1" ||!lifeBuff) {
+                return;
+            }
+            const x = lifeBuff.x * GRID_SIZE;
+            const y = lifeBuff.y * GRID_SIZE;
+            ctx.fillStyle = "#e91e63";
+            ctx.fillRect(x + 2,y + 2,GRID_SIZE - 4,GRID_SIZE - 4);
+            // Biểu tượng +
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 18px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("+", x + GRID_SIZE / 2, y + GRID_SIZE / 2);
         }
 
         // ĐIỀU KHIỂN
@@ -500,7 +584,7 @@
             }
         );
 
-        // TẠO ĐỊA HÌNH
+        // CREAT OBSTACLES
         function createObstacles() {
             obstacles = [];
             // Level 1 không có địa hình
@@ -540,7 +624,7 @@
             }
         }
 
-        // VẼ ĐỊA HÌNH
+        // DRAW OBSTACLES
         function drawObstacles() {
             obstacles.forEach(obstacle => {
                 const x = obstacle.x * GRID_SIZE;
