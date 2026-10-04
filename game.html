@@ -192,9 +192,15 @@
             <span class="level-name" id="levelName">LEVEL 1</span>
         </h1>
         <!-- ĐIỂM + MẠNG -->
-        <div class="game-info">
-            <div> Điểm: <span class="score" id="score"> 0 </span></div>
-            <div> Mạng: <span class="lives" id="lives"> ❤️❤️❤️ </span></div>
+       <div class="game-info">
+            <div>Điểm: <span class="score" id="score">0</span></div>
+            <div>Mạng: <span class="lives" id="lives">❤️❤️❤️</span></div>
+
+            <!-- Chỉ hiện ở Level 3 -->
+            <div id="portalTimer" style="display: none;">
+                Cổng đổi sau:
+                <span id="portalTime">15</span>s
+            </div>
         </div>
 
         <!-- SÂN CHƠI -->
@@ -212,9 +218,9 @@
         <div class="game-over-box">
             <h2>GAME OVER</h2>
             <p> Điểm của bạn: <strong id="finalScore"> 0 </strong></p>
-            <button class="restart-btn" onclick="restartGame()"> 🔄 CHƠI LẠI</button>
+            <button class="restart-btn" onclick="restartGame()">CHƠI LẠI</button>
             <br><br>
-            <button class="home-btn" onclick="goHome()">🏠 TRANG CHỦ</button>
+            <button class="home-btn" onclick="goHome()">TRANG CHỦ</button>
         </div>
     </div>
 
@@ -230,7 +236,6 @@
                 lives: 3,
                 growSnake: true,
                 food10: true,
-                food20: true,
                 obstacles: false
             };
 
@@ -256,6 +261,21 @@
         let lifeBuff = null;
         let lifeBuffSpawned = false;
         let lifeBuffCollected = false;
+         let portals = [];
+        let portalTimer = null;
+        let portalCountdown = 15;
+        const MAP_SPLIT_LEFT = 14;
+        const MAP_SPLIT_RIGHT = 15;
+        const PORTAL_WIDTH = 1;
+        const PORTAL_HEIGHT = 2;
+        const PORTAL_MARGIN = 2;
+         const portalTimerElement =
+        document.getElementById("portalTimer");
+        const portalTimeElement =
+            document.getElementById("portalTime");
+        if (levelConfig.level === "level3") {
+            portalTimerElement.style.display ="block";
+        }
 
         // HIỂN THỊ LEVEL
         document.getElementById("levelName")
@@ -266,9 +286,9 @@
         // KHỞI TẠO GAME
         function initGame() {
             snake = [
-                { x: 10, y: 10 },
-                { x: 9, y: 10 },
-                { x: 8, y: 10 }
+                { x: 7, y: 10 },
+                { x: 6, y: 10 },
+                { x: 5, y: 10 }
             ];
             direction = { x: 1, y: 0 };
             nextDirection = { x: 1, y: 0 };
@@ -281,6 +301,14 @@
             lifeBuffSpawned = false;
             lifeBuffCollected = false;
             createObstacles();
+            if (levelConfig.level === "level3") {
+                createPortals();
+                startPortalTimer();
+            }
+            else {
+                portals = [];
+                stopPortalTimer();
+            }
             createFood();
             updateInfo();
             document.getElementById("gameOver").style.display = "none";
@@ -328,14 +356,27 @@
                 if (onObstacle) {
                     continue;
                 }
+                /* Không spawn trên cổng */
+                if (isPortalCell(x, y)) {
+                    continue;
+                }
+                /* Không spawn tại buff */
+                if (lifeBuff && lifeBuff.x === x && lifeBuff.y === y) {
+                    continue;
+                }
                 food = {x: x,y: y,value: 10};
                 validPosition = true;
             }
         }
 
-        // TẠO BUFF HỒI MẠNG - CHỈ LEVEL 2
+        //KIỂM TRA ĐẦU RẮN CÓ VƯỢT ĐƯỜNG GIỮA
+        function crossesMapSplit(head) {
+            return (head.x === MAP_SPLIT_LEFT || head.x === MAP_SPLIT_RIGHT);
+        }
+
+
+        // TẠO BUFF HỒI MẠNG
         function createLifeBuff() {
-            // Chỉ Level 2 mới có buff
             if (levelConfig.level === "level1") {
                 return;
             }
@@ -409,12 +450,16 @@
                 head.y >= obstacle.y &&
                 head.y < obstacle.y + obstacle.height
             );
-
             if (hitObstacle) {
                 loseLife();
                 return;
             }
-
+            if (levelConfig.level === "level3") {
+                if (head.x === MAP_SPLIT_LEFT || head.x === MAP_SPLIT_RIGHT) {
+                    loseLife();
+                    return;
+                }
+            }
             //THÊM ĐẦU
             snake.unshift(head);
             //ĂN THỨC ĂN
@@ -422,7 +467,7 @@
 
                 score += food.value;
                 // LEVEL 2:
-                if (levelConfig.level === "level1" &&score >= 100 &&!lifeBuffSpawned) {
+                if (levelConfig.level !== "level1" &&score >= 100 &&!lifeBuffSpawned) {
                     createLifeBuff();
                 }
                 // Kiểm tra sang level tiếp theo
@@ -435,43 +480,48 @@
                 snake.pop();
             }
             // ĂN BUFF HỒI MẠNG
-        if (levelConfig.level === "level1" &&lifeBuff && head.x === lifeBuff.x && head.y === lifeBuff.y) {
-            // Hồi 1 mạng
-            lives++;
-            // Cập nhật giao diện
-            updateInfo();
-            // Buff biến mất
-            lifeBuff = null;
-            lifeBuffCollected = true;
-            console.log("Đã ăn buff hồi mạng! +1 mạng");
-        }
-            updateInfo();
-            drawGame();
-        }
-
-        // MẤT MẠNG
-        function loseLife() {
-            lives--;
-            updateInfo();
-            if (lives <= 0) {
-                endGame();
-                return;
+            if (levelConfig.level !== "level1" &&lifeBuff && head.x === lifeBuff.x && head.y === lifeBuff.y) {
+                // Hồi 1 mạng
+                lives++;
+                // Cập nhật giao diện
+                updateInfo();
+                // Buff biến mất
+                lifeBuff = null;
+                lifeBuffCollected = true;
+                console.log("Đã ăn buff hồi mạng! +1 mạng");
             }
-            snake = [
-                {x: 10, y: 10},
-                {x: 9, y: 10},
-                {x: 8, y: 10}
-            ];
-            direction = {x: 1, y: 0};
-            nextDirection = {x: 1, y: 0};
-            createFood();
-            drawGame();
+
+            if (levelConfig.level === "level3" && isPortalCell(head.x, head.y)) {
+                teleportSnake();
+                }
+                    updateInfo();
+                    drawGame();
+                }
+
+            // MẤT MẠNG
+            function loseLife() {
+                lives--;
+                updateInfo();
+                if (lives <= 0) {
+                    endGame();
+                    return;
+                }
+                snake = [
+                    {x: 10, y: 10},
+                    {x: 9, y: 10},
+                    {x: 8, y: 10}
+                ];
+                direction = {x: 1, y: 0};
+                nextDirection = {x: 1, y: 0};
+                createFood();
+                drawGame();
         }
 
         // GAME OVER
         function endGame() {
             gameRunning = false;
             clearInterval(gameLoop);
+            stopPortalTimer();  
             document.getElementById("finalScore").textContent = score;
             document.getElementById("gameOver").style.display = "flex";
         }
@@ -500,6 +550,8 @@
             drawSnake();
             drawObstacles();
             drawLifeBuff();
+            drawMapSplit();
+            drawPortals();
         }
 
         // DRAW SNAKE
@@ -641,6 +693,284 @@
                 ctx.strokeRect( x + 2, y + 2, width - 4, height - 4);
             });
         }
+
+        // VẼ BẢN ĐỒ CHIA ĐÔI
+         function drawMapSplit() {
+            if (levelConfig.level !== "level3") {
+                return;
+            }
+            const x =MAP_SPLIT_RIGHT * GRID_SIZE;
+            ctx.fillStyle ="#3e2723";
+            ctx.fillRect(x - 3, 0, 6,canvas.height);
+            for (let y = 0; y < ROWS; y++) {
+                if (isPortalCell(MAP_SPLIT_LEFT, y) || isPortalCell(MAP_SPLIT_RIGHT, y)) {
+                    continue;
+                }
+                ctx.fillStyle = "#5d4037";
+                ctx.fillRect(x - 3, y * GRID_SIZE, 6, GRID_SIZE);
+            }
+        }
+
+        // TẠO CỔNG DỊCH CHUYỂN
+        function createPortals() {
+            portals = [];
+            let attempts = 0;
+            // PORTAL BÊN TRÁI
+            while (portals.length < 1 && attempts < 1000) {
+                attempts++;
+                const x = Math.floor(Math.random() * (MAP_SPLIT_LEFT - PORTAL_MARGIN * 2)) + PORTAL_MARGIN;
+                const y = Math.floor(Math.random() * (ROWS - PORTAL_HEIGHT));
+                const newPortal = {
+                    x: x,
+                    y: y,
+                    width: PORTAL_WIDTH,
+                    height: PORTAL_HEIGHT,
+                    side: "left"
+                };
+                // Không đè lên rắn
+                const overlapsSnake = snake.some(segment =>
+                    segment.x >= newPortal.x &&
+                    segment.x < newPortal.x + newPortal.width &&
+                    segment.y >= newPortal.y &&
+                    segment.y < newPortal.y + newPortal.height
+                );
+                if (overlapsSnake) {
+                    continue;
+                }
+                // Không đè lên thức ăn
+                if (food && isPositionInsidePortal(food.x, food.y, newPortal)) {
+                    continue;
+                }
+                // Không đè lên buff
+                if (lifeBuff && isPositionInsidePortal( lifeBuff.x, lifeBuff.y,newPortal)) {
+                    continue;
+                }
+                // Không đè lên địa hình
+                const overlapsObstacle = obstacles.some(obstacle =>
+                    newPortal.x < obstacle.x + obstacle.width &&
+                    newPortal.x + newPortal.width > obstacle.x &&
+                    newPortal.y < obstacle.y + obstacle.height &&
+                    newPortal.y + newPortal.height > obstacle.y
+                );
+                if (overlapsObstacle) {
+                    continue;
+                }
+                portals.push(newPortal);
+            }
+            // PORTAL BÊN PHẢI
+            attempts = 0;
+            while (portals.length < 2 && attempts < 1000) {
+                attempts++;
+                const rightStart = MAP_SPLIT_RIGHT + 1;
+                const rightWidth = COLS - rightStart - PORTAL_MARGIN;
+                const x = Math.floor(Math.random() * rightWidth) + rightStart;
+                const y = Math.floor(Math.random() * (ROWS - PORTAL_HEIGHT));
+                const newPortal = {
+                    x: x,
+                    y: y,
+                    width: PORTAL_WIDTH,
+                    height: PORTAL_HEIGHT,
+                    side: "right"
+                };
+                // Không đè lên rắn
+                const overlapsSnake = snake.some(segment =>
+                    segment.x >= newPortal.x &&
+                    segment.x < newPortal.x + newPortal.width &&
+                    segment.y >= newPortal.y &&
+                    segment.y < newPortal.y + newPortal.height
+                );
+                if (overlapsSnake) {
+                    continue;
+                }
+                // Không đè lên thức ăn
+                if (food && isPositionInsidePortal(food.x, food.y, newPortal)) {
+                    continue;
+                }
+                // Không đè lên buff
+                if (lifeBuff && isPositionInsidePortal(lifeBuff.x,mlifeBuff.y, newPortal)) {
+                    continue;
+                }
+                // Không đè lên địa hình
+                const overlapsObstacle = obstacles.some(obstacle =>
+                    newPortal.x < obstacle.x + obstacle.width &&
+                    newPortal.x + newPortal.width > obstacle.x &&
+                    newPortal.y < obstacle.y + obstacle.height &&
+                    newPortal.y + newPortal.height > obstacle.y
+                );
+                if (overlapsObstacle) {
+                    continue;
+                }
+                portals.push(newPortal);
+            }
+
+            // FALLBACK
+            if (portals.length < 2) {
+                portals = [
+                    {x: 5, y: 4, width: PORTAL_WIDTH, height: PORTAL_HEIGHT, side: "left"},
+                    {x: 24, y: 12, width: PORTAL_WIDTH,nheight: PORTAL_HEIGHT, side: "right"}
+                ];
+            }
+        }
+
+        function isPositionInsidePortal(x, y, portal) {
+            return (
+                x >= portal.x &&
+                x < portal.x + portal.width &&
+                y >= portal.y &&
+                y < portal.y + portal.height
+            );
+        }
+         //KIỂM TRA Ô CÓ PHẢI PORTAL
+        function isPortalCell(x, y) {
+            if (levelConfig.level !== "level3") {
+                return false;
+            }
+
+            return portals.some(portal =>
+                isPositionInsidePortal(x, y, portal)
+            );
+        }
+
+        //TÌM PORTAL ĐANG ĐỨNG
+        function getPortalAt(x, y) {
+            return portals.find(portal =>
+                isPositionInsidePortal(x, y, portal)
+            );
+        }
+        // TELEPORT RẮN
+        function teleportSnake() {
+            if (portals.length < 2) {
+                return;
+            }
+            const head = snake[0];
+            // Portal hiện tại
+            const currentPortal = getPortalAt(head.x, head.y);
+            if (!currentPortal) {
+                return;
+            }
+            // Tìm portal còn lại
+            const targetPortal = portals.find(portal => portal !== currentPortal);
+            if (!targetPortal) {
+                return;
+            }
+            // Giữ nguyên vị trí tương đối theo chiều Y
+            const offsetY = head.y - currentPortal.y;
+            let targetY = targetPortal.y + offsetY;
+            // Đảm bảo không vượt khỏi portal
+            targetY = Math.max(targetPortal.y, Math.min(targetPortal.y + targetPortal.height - 1, targetY));
+            const targetX = targetPortal.x;
+            // Kiểm tra rắn có đè lên thân của chính nó không
+            const hitBody = snake.some(
+                (segment, index) => {
+                    if (index === 0) {
+                        return false;
+                    }
+                    return (segment.x === targetX && segment.y === targetY);
+                }
+            );
+            if (hitBody) {
+                loseLife();
+                return;
+            }
+            // Đưa đầu rắn sang portal đối diện
+            snake[0] = {x: targetX, y: targetY};
+            drawGame();
+        }
+
+        //PORTAL TIMER
+        function startPortalTimer() {
+            stopPortalTimer();
+            portalCountdown = 15;
+            updatePortalTimer();
+            portalTimer =
+                setInterval(
+                    function () {
+                        if (!gameRunning) {
+                            return;
+                        }
+                        if (isPaused) {
+                            return;
+                        }
+                        portalCountdown--;
+                        updatePortalTimer();
+                        if (portalCountdown <= 0) {
+                            createPortals();
+                            if (food && isPortalCell( food.x, food.y)) {
+                                createFood();
+                            }
+                            if ( lifeBuff && isPortalCell( lifeBuff.x, lifeBuff.y)) {
+                                relocateLifeBuff();
+                            }
+                            portalCountdown = 15;
+                            updatePortalTimer();
+                        }
+                    },1000
+                );
+        }
+
+        //STOP PORTAL TIMER
+        function stopPortalTimer() {
+            if (portalTimer) {
+                clearInterval(portalTimer);
+                portalTimer = null;
+            }
+        }
+
+        //UPDATE PORTAL TIMER
+        function updatePortalTimer() {
+            portalTimeElement.textContent =portalCountdown;
+        }
+
+         //DI CHUYỂN BUFF NẾU CỔNG ĐÈ LÊN*
+        function relocateLifeBuff() {
+            if (!lifeBuff) {
+                return;
+            }
+            let validPosition = false;
+            let attempts = 0;
+            while (!validPosition && attempts < 1000) {
+                attempts++;
+                const x =Math.floor(Math.random() * COLS);
+                const y =Math.floor(Math.random() * ROWS);
+                const onSnake = snake.some( segment =>segment.x === x && segment.y === y);
+                if (onSnake) {
+                    continue;
+                }
+                if (isPortalCell(x, y)) {
+                    continue;
+                }
+                if (food && food.x === x && food.y === y) {
+                    continue;
+                }
+                lifeBuff = {x: x, y: y};
+                validPosition = true;
+            }
+        }
+
+        // DRAW PORTALS
+        function drawPortals() {
+            if (levelConfig.level !== "level3") {
+                return;
+            }
+            portals.forEach(
+                (portal, index) => {
+                    const x =portal.x * GRID_SIZE;
+                    const y =portal.y * GRID_SIZE;
+                    const width = portal.width * GRID_SIZE;
+                    const height = portal.height * GRID_SIZE;
+                    ctx.fillStyle ="#7e57c2";
+                    ctx.fillRect( x, y,width,height);
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect( x + 2, y + 2, width - 4, height - 4);
+                    ctx.fillStyle = "rgba(255,255,255,0.25)";
+                    ctx.fillRect( x + 5, y + 5, width - 10, height - 10);
+                    ctx.fillStyle = "#ffffff";
+                }
+            );
+
+        }
+
+
 
         // QUA LEVEL TIẾP THEO
         function checkNextLevel() {
