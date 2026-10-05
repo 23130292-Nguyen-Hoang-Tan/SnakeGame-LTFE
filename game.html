@@ -269,13 +269,24 @@
         const PORTAL_WIDTH = 1;
         const PORTAL_HEIGHT = 2;
         const PORTAL_MARGIN = 2;
-         const portalTimerElement =
+        const portalTimerElement =
         document.getElementById("portalTimer");
         const portalTimeElement =
             document.getElementById("portalTime");
         if (levelConfig.level === "level3") {
             portalTimerElement.style.display ="block";
         }
+        let bullets = [];
+        let bulletTimer = null;
+        const BULLET_INTERVAL = 1500;
+        const BULLET_SPEED = 1;
+        const BULLET_RADIUS = 7;
+        const BULLET_SPAWN_POINTS = {
+            top: [8, 22],
+            bottom: [8, 22],
+            left: [6, 13],
+            right: [6, 13]
+        };
 
         // HIỂN THỊ LEVEL
         document.getElementById("levelName")
@@ -300,6 +311,8 @@
             lifeBuff = null;
             lifeBuffSpawned = false;
             lifeBuffCollected = false;
+            bullets = [];
+            stopBulletTimer();
             createObstacles();
             if (levelConfig.level === "level3") {
                 createPortals();
@@ -308,6 +321,9 @@
             else {
                 portals = [];
                 stopPortalTimer();
+            }
+            if (levelConfig.level === "level4") {
+                startBulletTimer();
             }
             createFood();
             updateInfo();
@@ -425,6 +441,8 @@
             if (!gameRunning || isPaused) {
                 return;
             }
+            updateBullets();
+            if (!gameRunning) return;
             direction = nextDirection;
             const head = {
                 x: snake[0].x + direction.x,
@@ -476,6 +494,10 @@
                     return;
                 }
                 createFood();
+                // LEVEL 4: ăn điểm nhưng KHÔNG tăng chiều dài
+                if (levelConfig.level === "level4") {
+                    snake.pop();
+                }
             } else {
                 snake.pop();
             }
@@ -496,7 +518,105 @@
                 }
                     updateInfo();
                     drawGame();
+            }
+
+            // LEVEL 4
+            function startBulletTimer() {
+                stopBulletTimer();
+                bulletTimer = setInterval(() => {
+                    if (!gameRunning || isPaused) return;
+                    createBullet();
+                }, BULLET_INTERVAL);
+            }
+            function stopBulletTimer() {
+                if (bulletTimer) {
+                    clearInterval(bulletTimer);
+                    bulletTimer = null;
                 }
+            }
+            //TẠO ĐẠN
+            function createBullet() {
+                if (levelConfig.level !== "level4") return;
+                const sides = ["top", "bottom", "left", "right"];
+                const side = sides[Math.floor(Math.random() * sides.length)];
+                const index = Math.floor(Math.random() * 2);
+                let bullet;
+                if (side === "top") {
+                    bullet = {x: BULLET_SPAWN_POINTS.top[index], y: 0, dx: 0, dy: BULLET_SPEED};
+                } else if (side === "bottom") {
+                    bullet = {x: BULLET_SPAWN_POINTS.bottom[index], y: ROWS - 1, dx: 0, dy: -BULLET_SPEED};
+                } else if (side === "left") {
+                    bullet = {x: 0, y: BULLET_SPAWN_POINTS.left[index], dx: BULLET_SPEED, dy: 0};
+                } else {
+                    bullet = {x: COLS - 1, y: BULLET_SPAWN_POINTS.right[index], dx: -BULLET_SPEED, dy: 0};
+                }
+                bullets.push(bullet);
+            }
+            //CẬP NHẬP ĐẠN
+            function updateBullets() {
+                if (levelConfig.level !== "level4" || !gameRunning || isPaused) return;
+                for (let i = bullets.length - 1; i >= 0; i--) {
+                    const bullet = bullets[i];
+                    bullet.x += bullet.dx;
+                    bullet.y += bullet.dy;
+                    const hitSnake = snake.some(segment =>
+                        Math.abs(segment.x - bullet.x) < 0.5 &&
+                        Math.abs(segment.y - bullet.y) < 0.5
+                    );
+                    if (hitSnake) {
+                        bullets.splice(i, 1);
+                        loseLife();
+                        if (!gameRunning) return;
+                        continue;
+                    }
+                    if (bullet.x < -1 || bullet.x > COLS || bullet.y < -1 || bullet.y > ROWS) {
+                        bullets.splice(i, 1);
+                    }
+                }
+            }
+            //VẼ PHÁO
+            function drawBulletCannons() {
+                if (levelConfig.level !== "level4") return;
+                const points = [
+                    {x: BULLET_SPAWN_POINTS.top[0], y: 0},
+                    {x: BULLET_SPAWN_POINTS.top[1], y: 0},
+                    {x: BULLET_SPAWN_POINTS.bottom[0], y: ROWS - 1},
+                    {x: BULLET_SPAWN_POINTS.bottom[1], y: ROWS - 1},
+                    {x: 0, y: BULLET_SPAWN_POINTS.left[0]},
+                    {x: 0, y: BULLET_SPAWN_POINTS.left[1]},
+                    {x: COLS - 1, y: BULLET_SPAWN_POINTS.right[0]},
+                    {x: COLS - 1, y: BULLET_SPAWN_POINTS.right[1]}
+                ];
+                points.forEach(point => {
+                    const px = point.x * GRID_SIZE + GRID_SIZE / 2;
+                    const py = point.y * GRID_SIZE + GRID_SIZE / 2;
+                    ctx.fillStyle = "#4a2a14";
+                    ctx.beginPath();
+                    ctx.arc(px, py, 9, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = "#8b5a2b";
+                    ctx.beginPath();
+                    ctx.arc(px, py, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+            //VẼ ĐẠN
+            function drawBullets() {
+                if (levelConfig.level !== "level4") return;
+                bullets.forEach(bullet => {
+                    const px = bullet.x * GRID_SIZE + GRID_SIZE / 2;
+                    const py = bullet.y * GRID_SIZE + GRID_SIZE / 2;
+                    ctx.beginPath();
+                    ctx.fillStyle = "#222";
+                    ctx.arc(px, py, BULLET_RADIUS, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.fillStyle = "#ff5722";
+                    ctx.arc(px, py, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+
 
             // MẤT MẠNG
             function loseLife() {
@@ -521,7 +641,8 @@
         function endGame() {
             gameRunning = false;
             clearInterval(gameLoop);
-            stopPortalTimer();  
+            stopPortalTimer();
+            stopBulletTimer();
             document.getElementById("finalScore").textContent = score;
             document.getElementById("gameOver").style.display = "flex";
         }
@@ -531,27 +652,14 @@
             // NỀN
             ctx.fillStyle = "#65a936";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // LƯỚI
-            ctx.strokeStyle = "rgba(255,255,255,0.08)";
-            ctx.lineWidth = 1;
-            for (let x = 0;x <= canvas.width;x += GRID_SIZE) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x,canvas.height);
-                ctx.stroke();
-            }
-            for (let y = 0;y <= canvas.height;y += GRID_SIZE) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width,y);
-                ctx.stroke();
-            }
             drawFood();
             drawSnake();
             drawObstacles();
             drawLifeBuff();
             drawMapSplit();
             drawPortals();
+            drawBulletCannons();
+            drawBullets();
         }
 
         // DRAW SNAKE
@@ -563,8 +671,7 @@
                     if (index === 0) {
                         // ĐẦU
                         ctx.fillStyle ="#ffcc00";
-                        ctx.fillRect(x + 2,y + 2,GRID_SIZE - 4,GRID_SIZE - 4
-                        );
+                        ctx.fillRect(x + 2,y + 2,GRID_SIZE - 4,GRID_SIZE - 4);
                     } else {
                         // THÂN
                         ctx.fillStyle ="#ff8c00";
