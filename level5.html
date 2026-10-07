@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level 5 - Snake Adventure</title>
+</head>
+<body>
+
+<script>
+    const levelConfig = {
+        level: "level5",
+        // Tốc độ rắn người chơi: 120ms / ô
+        speed: 120,
+        // 3 mạng
+        lives: 3,
+        // Level 5 không tăng chiều dài rắn
+        growSnake: false,
+        // Thức ăn 10 điểm
+        food10: true,
+        // Không có chướng ngại vật
+        obstacles: false,
+        // Bật Bot
+        bot: true,
+        // Bot ban đầu kích thước 2x2 ô
+        botSize: 2,
+        // Bot mặc định chậm hơn rắn 2 lần
+        // Rắn: 120ms
+        // Bot: 240ms
+        botSpeedMultiplier: 2,
+        // Bot sẽ tự tìm và ăn thức ăn
+        botChaseFood: true,
+        // Bot ăn 10 thức ăn x 10 điểm = 100 điểmthì tăng kích thước
+        botGrowScore: 100,
+        // Kích thước Bot sau khi tăng: 4x4
+        botMaxSize: 4,
+        // Bật buff làm chậm Bot
+        slowBuff: true,
+        // Cứ mỗi 8 điểm thì xuất hiện buff
+        slowBuffInterval: 8,
+        // Buff có hiệu lực trong 5 giây
+        slowBuffDuration: 5000,
+        // Khi người chơi ăn buff:
+        slowBuffMultiplier: 2
+    };
+    // Lưu cấu hình Level 5
+    localStorage.setItem(
+        "snakeLevelConfig",
+        JSON.stringify(levelConfig)
+    );
+    // Chuyển sang game chung
+    window.location.href = "game.html";
+</script>
+
+</body>
+</html>

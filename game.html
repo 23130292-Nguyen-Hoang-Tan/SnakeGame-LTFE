@@ -288,6 +288,21 @@
             right: [6, 13]
         };
 
+        // LEVEL 5 - BOT SĂN THỨC ĂN
+        let bot = null;
+        let botSize = 2;
+        let botScore = 0;
+        let botMoveCounter = 0;
+        let botTimer = null;
+        let slowBuff = null;
+        let slowBuffCount = 0;
+        let slowEffectUntil = 0;
+        let slowSkipMove = false;
+        const BOT_NORMAL_INTERVAL = 120; // Rắn 120ms, bot chậm hơn 2 lần
+        const BOT_SLOW_INTERVAL = 720; // Khi ăn buff: bot chậm hơn 4 lần so với tốc độ mặc định
+        const SLOW_BUFF_EVERY_FOODS = 8;
+        const SLOW_DURATION = 5000;
+
         // HIỂN THỊ LEVEL
         document.getElementById("levelName")
             .textContent =
@@ -313,6 +328,18 @@
             lifeBuffCollected = false;
             bullets = [];
             stopBulletTimer();
+
+            // Reset cơ chế Level 5
+            bot = null;
+            botSize = 2;
+            botScore = 0;
+            botMoveCounter = 0;
+            stopBotTimer();
+            slowBuff = null;
+            slowBuffCount = 0;
+            slowEffectUntil = 0;
+            slowSkipMove = false;
+
             createObstacles();
             if (levelConfig.level === "level3") {
                 createPortals();
@@ -326,6 +353,12 @@
                 startBulletTimer();
             }
             createFood();
+
+            if (levelConfig.level === "level5") {
+                createBot();
+                startBotTimer();
+            }
+
             updateInfo();
             document.getElementById("gameOver").style.display = "none";
             document.querySelector(".pause-btn").textContent = "⏸ DỪNG GAME";
@@ -374,6 +407,10 @@
                 }
                 /* Không spawn trên cổng */
                 if (isPortalCell(x, y)) {
+                    continue;
+                }
+                // Level 5: không đặt thức ăn chồng lên bot.
+                if (levelConfig.level === "level5" && botContainsCell(x, y)) {
                     continue;
                 }
                 /* Không spawn tại buff */
@@ -441,8 +478,10 @@
             if (!gameRunning || isPaused) {
                 return;
             }
+
             updateBullets();
             if (!gameRunning) return;
+
             direction = nextDirection;
             const head = {
                 x: snake[0].x + direction.x,
@@ -480,6 +519,13 @@
             }
             //THÊM ĐẦU
             snake.unshift(head);
+
+            // LEVEL 5: chỉ ĐẦU rắn chạm bot mới mất mạng.
+            if (levelConfig.level === "level5" && botContainsCell(head.x, head.y)) {
+                loseLife();
+                return;
+            }
+
             //ĂN THỨC ĂN
             if (head.x === food.x && head.y === food.y) {
 
@@ -494,23 +540,37 @@
                     return;
                 }
                 createFood();
-                // LEVEL 4: ăn điểm nhưng KHÔNG tăng chiều dài
-                if (levelConfig.level === "level4") {
+
+                // LEVEL 5: cứ mỗi 8 thức ăn người chơi ăn được thì xuất hiện 1 buff làm chậm.
+                if (levelConfig.level === "level5") {
+                    const foodsEaten = Math.floor(score / 10);
+                    if (foodsEaten > 0 && foodsEaten % SLOW_BUFF_EVERY_FOODS === 0) {
+                        createSlowBuff();
+                    }
+                }
+
+                // LEVEL 4 và LEVEL 5: ăn điểm nhưng KHÔNG tăng chiều dài
+                if (levelConfig.level === "level4" || levelConfig.level === "level5") {
                     snake.pop();
                 }
             } else {
                 snake.pop();
             }
             // ĂN BUFF HỒI MẠNG
-            if (levelConfig.level !== "level1" &&lifeBuff && head.x === lifeBuff.x && head.y === lifeBuff.y) {
+            if (levelConfig.level !== "level1" &&lifeBuff && head.x === lifeBuff.x && lifeBuff && head.y === lifeBuff.y) {
                 // Hồi 1 mạng
                 lives++;
-                // Cập nhật giao diện
                 updateInfo();
-                // Buff biến mất
                 lifeBuff = null;
                 lifeBuffCollected = true;
                 console.log("Đã ăn buff hồi mạng! +1 mạng");
+            }
+
+            // LEVEL 5: ăn buff làm chậm
+            if (levelConfig.level === "level5" && slowBuff && head.x === slowBuff.x && head.y === slowBuff.y) {
+                slowBuff = null;
+                slowEffectUntil = Date.now() + SLOW_DURATION;
+                slowSkipMove = false;
             }
 
             if (levelConfig.level === "level3" && isPortalCell(head.x, head.y)) {
@@ -643,6 +703,7 @@
             clearInterval(gameLoop);
             stopPortalTimer();
             stopBulletTimer();
+            stopBotTimer();
             document.getElementById("finalScore").textContent = score;
             document.getElementById("gameOver").style.display = "flex";
         }
@@ -656,10 +717,297 @@
             drawSnake();
             drawObstacles();
             drawLifeBuff();
+            drawSlowBuff();
+            drawBot();
             drawMapSplit();
             drawPortals();
             drawBulletCannons();
             drawBullets();
+        }
+
+        // ==================== LEVEL 5 - BOT ====================
+        // Bot 2x2, tự tìm đường đến thức ăn bằng BFS.
+        function createBot() {
+            if (levelConfig.level !== "level5") return;
+            const positions = [
+                { x: COLS - 4, y: 3 },
+                { x: COLS - 5, y: ROWS - 5 },
+                { x: 20, y: 3 },
+                { x: 20, y: 14 }
+            ];
+
+            let chosen = positions[Math.floor(Math.random() * positions.length)];
+            bot = {
+                x: chosen.x,
+                y: chosen.y,
+                width: 2,
+                height: 2
+            };
+
+            // Nếu vị trí ngẫu nhiên đè lên rắn/địa hình thì tìm vị trí hợp lệ.
+            if (!isBotPositionValid(bot.x, bot.y, bot.width, bot.height)) {
+                for (let y = 1; y < ROWS - bot.height; y++) {
+                    for (let x = 1; x < COLS - bot.width; x++) {
+                        if (isBotPositionValid(x, y, bot.width, bot.height)) {
+                            bot.x = x;
+                            bot.y = y;
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        function isBotPositionValid(x, y, width, height) {
+            if (x < 0 || y < 0 || x + width > COLS || y + height > ROWS) {
+                return false;
+            }
+
+            const overlapsSnake = snake.some(segment =>
+                segment.x >= x && segment.x < x + width &&
+                segment.y >= y && segment.y < y + height
+            );
+            if (overlapsSnake) return false;
+
+            const overlapsObstacle = obstacles.some(obstacle =>
+                x < obstacle.x + obstacle.width &&
+                x + width > obstacle.x &&
+                y < obstacle.y + obstacle.height &&
+                y + height > obstacle.y
+            );
+            if (overlapsObstacle) return false;
+
+            return true;
+        }
+
+        function botContainsCell(x, y) {
+            if (!bot) return false;
+            return (
+                x >= bot.x && x < bot.x + bot.width &&
+                y >= bot.y && y < bot.y + bot.height
+            );
+        }
+
+        // Bot mặc định chậm hơn rắn 2 lần: rắn 120ms / bot 240ms.
+        // Khi người chơi ăn buff đóng băng, bot chậm đi 4 lần so với tốc độ mặc định: 960ms.
+        function startBotTimer() {
+            stopBotTimer();
+            if (levelConfig.level !== "level5") return;
+
+            botTimer = setInterval(() => {
+                if (!gameRunning || isPaused) return;
+                updateBot();
+            }, 100);
+        }
+
+        function stopBotTimer() {
+            if (botTimer) {
+                clearInterval(botTimer);
+                botTimer = null;
+            }
+        }
+
+        function getBotMoveInterval() {
+            if (slowEffectUntil > 0 && Date.now() < slowEffectUntil) {
+                return BOT_SLOW_INTERVAL;
+            }
+            return BOT_NORMAL_INTERVAL;
+        }
+
+        function updateBot() {
+            if (levelConfig.level !== "level5" || !bot || !food) return;
+            // Timer mặc định gọi mỗi 240ms. Nếu đang bị đóng băng,
+            // chỉ cho bot thực sự di chuyển mỗi 960ms.
+            const now = Date.now();
+            if (bot._lastMoveTime && now - bot._lastMoveTime < getBotMoveInterval()) {
+                return;
+            }
+            bot._lastMoveTime = now;
+
+            const path = findBotPath();
+            if (path.length >= 2) {
+                const next = path[1];
+                bot.x = next.x;
+                bot.y = next.y;
+            }
+
+            // Bot ăn thức ăn bằng vùng 2x2 hoặc 4x4.
+            if (botContainsCell(food.x, food.y)) {
+                botScore += food.value;
+
+                // 10 lần ăn x 10 điểm = 100 điểm mới tăng kích thước.
+                if (botScore >= 100 && botSize < 4) {
+                    botSize = 4;
+                    bot.width = 4;
+                    bot.height = 4;
+                }
+                createFood();
+            }
+            // Chỉ đầu rắn chạm Bot mới mất mạng.
+            if (botContainsCell(snake[0].x, snake[0].y)) {
+                loseLife();
+            }
+        }
+
+        // BFS tìm đường ngắn nhất từ bot đến thức ăn.
+        function findBotPath() {
+            if (!bot || !food) return [];
+
+            const start = { x: bot.x, y: bot.y };
+            const target = { x: food.x, y: food.y };
+            const queue = [start];
+            const visited = new Set([`${start.x},${start.y}`]);
+            const parent = new Map();
+            while (queue.length > 0) {
+                const current = queue.shift();
+                if (current.x === target.x && current.y === target.y) {
+                    return reconstructBotPath(parent, start, target);
+                }
+                const directions = [
+                    { x: 1, y: 0 },
+                    { x: -1, y: 0 },
+                    { x: 0, y: 1 },
+                    { x: 0, y: -1 }
+                ];
+                directions.sort(() => Math.random() - 0.5);
+                for (const dir of directions) {
+                    const nx = current.x + dir.x;
+                    const ny = current.y + dir.y;
+                    const key = `${nx},${ny}`;
+
+                    if (visited.has(key)) continue;
+                    if (!isBotMoveValid(nx, ny)) continue;
+
+                    visited.add(key);
+                    parent.set(key, current);
+                    queue.push({ x: nx, y: ny });
+                }
+            }
+            return [];
+        }
+
+        function isBotMoveValid(x, y) {
+            if (x < 0 || y < 0 || x + bot.width > COLS || y + bot.height > ROWS) {
+                return false;
+            }
+
+            // Không đi xuyên qua địa hình.
+            const hitsObstacle = obstacles.some(obstacle =>
+                x < obstacle.x + obstacle.width &&
+                x + bot.width > obstacle.x &&
+                y < obstacle.y + obstacle.height &&
+                y + bot.height > obstacle.y
+            );
+            if (hitsObstacle) return false;
+
+            // Tránh thân rắn để bot có cảm giác đang chủ động tìm đường.
+            const hitsSnake = snake.some(segment =>
+                segment.x >= x && segment.x < x + bot.width &&
+                segment.y >= y && segment.y < y + bot.height
+            );
+
+            // Cho phép bot tiến vào vị trí có thức ăn.
+            if (hitsSnake && !(food.x >= x && food.x < x + bot.width && food.y >= y && food.y < y + bot.height)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        function reconstructBotPath(parent, start, target) {
+            const path = [target];
+            let current = target;
+
+            while (!(current.x === start.x && current.y === start.y)) {
+                const previous = parent.get(`${current.x},${current.y}`);
+                if (!previous) return [];
+                path.unshift(previous);
+                current = previous;
+            }
+
+            return path;
+        }
+
+        // Buff làm chậm xuất hiện sau mỗi 8 thức ăn người chơi đã ăn.
+        function createSlowBuff() {
+            if (levelConfig.level !== "level5") return;
+            if (slowBuff) return;
+
+            let attempts = 0;
+            while (attempts < 1000) {
+                attempts++;
+                const x = Math.floor(Math.random() * COLS);
+                const y = Math.floor(Math.random() * ROWS);
+
+                if (snake.some(segment => segment.x === x && segment.y === y)) continue;
+                if (botContainsCell(x, y)) continue;
+                if (food && food.x === x && food.y === y) continue;
+                if (obstacles.some(obstacle =>
+                    x >= obstacle.x && x < obstacle.x + obstacle.width &&
+                    y >= obstacle.y && y < obstacle.y + obstacle.height
+                )) continue;
+
+                slowBuff = { x, y };
+                return;
+            }
+        }
+
+        function isSnakeSlowed() {
+            if (levelConfig.level !== "level5") return false;
+            if (slowEffectUntil <= 0) return false;
+
+            if (Date.now() >= slowEffectUntil) {
+                slowEffectUntil = 0;
+                slowSkipMove = false;
+                return false;
+            }
+
+            return true;
+        }
+
+        function drawBot() {
+            if (levelConfig.level !== "level5" || !bot) return;
+
+            const x = bot.x * GRID_SIZE;
+            const y = bot.y * GRID_SIZE;
+            const width = bot.width * GRID_SIZE;
+            const height = bot.height * GRID_SIZE;
+
+            // Thân bot
+            ctx.fillStyle = "#7b1fa2";
+            ctx.fillRect(x + 2, y + 2, width - 4, height - 4);
+
+            // Viền
+            ctx.strokeStyle = "#4a148c";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(x + 2, y + 2, width - 4, height - 4);
+
+            // Mắt để dễ nhận diện bot.
+            ctx.fillStyle = "#ffffff";
+            const eyeSize = botSize >= 4 ? 6 : 4;
+            ctx.fillRect(x + width * 0.25, y + height * 0.25, eyeSize, eyeSize);
+            ctx.fillRect(x + width * 0.65, y + height * 0.25, eyeSize, eyeSize);
+            ctx.fillStyle = "#222222";
+            ctx.fillRect(x + width * 0.27, y + height * 0.27, 2, 2);
+            ctx.fillRect(x + width * 0.67, y + height * 0.27, 2, 2);
+        }
+
+        function drawSlowBuff() {
+            if (levelConfig.level !== "level5" || !slowBuff) return;
+
+            const x = slowBuff.x * GRID_SIZE;
+            const y = slowBuff.y * GRID_SIZE;
+            const pulse = 2 + Math.sin(Date.now() / 150) * 2;
+
+            ctx.fillStyle = "#29b6f6";
+            ctx.fillRect(x + 3 - pulse / 2, y + 3 - pulse / 2,
+                GRID_SIZE - 6 + pulse, GRID_SIZE - 6 + pulse);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 17px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("❄", x + GRID_SIZE / 2, y + GRID_SIZE / 2 + 1);
         }
 
         // DRAW SNAKE
@@ -914,7 +1262,7 @@
             if (portals.length < 2) {
                 portals = [
                     {x: 5, y: 4, width: PORTAL_WIDTH, height: PORTAL_HEIGHT, side: "left"},
-                    {x: 24, y: 12, width: PORTAL_WIDTH,nheight: PORTAL_HEIGHT, side: "right"}
+                    {x: 24, y: 12, width: PORTAL_WIDTH,height: PORTAL_HEIGHT, side: "right"}
                 ];
             }
         }
