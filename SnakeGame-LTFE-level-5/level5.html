@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Adventure - Level 5</title>
+</head>
+<body>
+<script>
+    const levelConfig = {
+        level: "level5",
+        speed: 120,
+        lives: 3,
+        growSnake: true,
+        food10: true,
+        obstacles: false,
+        bot: true,
+        botSize: 2,
+        botSpeedMultiplier: 2,
+        botChaseFood: true,
+        botGrowScore: 100,
+        botMaxSize: 4,
+    };
+    localStorage.setItem(
+        "snakeLevelConfig",
+        JSON.stringify(levelConfig)
+    );
+    window.location.href = "game.html";
+</script>
+
+</body>
+</html>

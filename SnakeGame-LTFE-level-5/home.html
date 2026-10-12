@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNAKE GAME - LTFE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --btn-green: #4caf50;
+            --btn-green-shadow: #2e7d32;
+            --btn-blue: #03a9f4;
+            --btn-blue-shadow: #0277bd;
+            --btn-orange: #ff9800;
+            --btn-orange-shadow: #ef6c00;
+            --modal-bg: #fff9c4;
+            --modal-border: #f57f17;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        body {
+            font-family: 'Nunito', cursive;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background:
+                linear-gradient(rgba(0,0,0,0.08), rgba(0,0,0,0.08)),
+                url('img/home-bg.jpg') center center / cover no-repeat;
+            position: relative;
+        }
+        .scenery-item {
+            position: absolute;
+            z-index: 3;
+            font-size: 5rem;
+            filter: drop-shadow(0 10px 5px rgba(0,0,0,0.3));
+        }
+        .ui-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .ui-content {
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3vh;
+            margin-top: 5vh;
+        }
+        .game-title {
+            font-size: 20rem;
+            color: #fff176;
+            text-align: center;
+            line-height: 1;
+            letter-spacing: 4px;
+            text-shadow: 
+                -4px -4px 0 #f57f17,  4px -4px 0 #f57f17,
+                -4px  4px 0 #f57f17,  4px  4px 0 #f57f17,
+                 0 12px 0 #e65100, 0 20px 15px rgba(0,0,0,0.5);
+            margin-bottom: 2vh;
+            position: relative;
+        }
+        .game-title span {
+            display: block;
+            font-size: 8rem;
+            color: #b9f6ca;
+            text-shadow: 
+                -3px -3px 0 #1b5e20,  3px -3px 0 #1b5e20,
+                -3px  3px 0 #1b5e20,  3px  3px 0 #1b5e20,
+                 0 8px 0 #004d40;
+        }
+        .snake-icon {
+            position: absolute;
+            font-size: 8rem;
+            top: -20px;
+            right: 40px;
+            transform: rotate(15deg);
+            filter: drop-shadow(0 5px 0 #1b5e20);
+        }
+        /* Hiệu ứng 3D cho nút bấm*/
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            width: 320px;
+        }
+        .btn {
+            font-family: 'Nunito', bold, sans-serif;
+            font-size: 1.8rem;
+            color: white;
+            padding: 18px 20px;
+            border: 5px solid white;
+            border-radius: 35px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.1s;
+            position: relative;
+            text-shadow: 2px 3px 0 rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .btn-play {
+            background-color: var(--btn-green);
+            box-shadow: 0 10px 0 var(--btn-green-shadow), 0 20px 15px rgba(0,0,0,0.3);
+        }
+        .btn-level {
+            background-color: var(--btn-blue);
+            box-shadow: 0 10px 0 var(--btn-blue-shadow), 0 20px 15px rgba(0,0,0,0.3);
+        }
+        .btn-guide {
+            background-color: var(--btn-orange);
+            box-shadow: 0 10px 0 var(--btn-orange-shadow), 0 20px 15px rgba(0,0,0,0.3);
+        }
+        .btn:active {
+            transform: translateY(10px);
+            box-shadow: 0 0px 0 transparent !important;
+        }
+        @media (max-height: 700px) {
+            .game-title { font-size: 7rem; }
+            .btn { font-size: 1.4rem; padding: 12px 20px; }
+            .ui-content { gap: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Lớp giao diện (Chứa Tiêu đề và Nút bấm) -->
+    <div class="ui-layer">
+        <div class="ui-content">
+            <h1 class="game-title">SNAKE<span>ADVENTURE</span><div class="snake-icon">🐍</div></h1>
+            <div class="btn-group">
+                <button class="btn btn-play" onclick="playGame()">
+                    <span>▶</span> CHƠI
+                </button>
+                <button class="btn btn-level" onclick="openModal('levelModal')">
+                    <span>⭐</span> CHỌN LEVEL
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="levelModalContainer"></div>
+</body>
+<script>
+    // LEVEL HIỆN TẠI
+    // Mặc định khi mở game là Level 1
+    let selectedLevel = 'level1';
+
+    // NẠP MODAL
+    async function loadModals() {
+        try {
+            const levelResponse = await fetch('level.html');
+            if (!levelResponse.ok) {
+                throw new Error('Không thể tải level.html');
+            }
+            // Nạp level modal
+            const levelHTML = await levelResponse.text();
+            document.getElementById('levelModalContainer').innerHTML = levelHTML;
+            // Đọc level đã lưu
+            const savedLevel = localStorage.getItem('selectedLevel');
+            if ( savedLevel && ['level1', 'level2', 'level3', 'level4', 'level5'].includes(savedLevel)) {
+                selectedLevel = savedLevel;
+            }
+            // Đánh dấu level hiện tại
+            updateSelectedLevel();
+            console.log('Đã tải modal level.');
+        } catch (error) {
+            console.error(
+                'Lỗi khi tải modal:',
+                error
+            );
+        }
+    }
+
+document.addEventListener(
+    'DOMContentLoaded',
+    loadModals
+);
+
+    // CẬP NHẬT LEVEL ĐANG CHỌN TRÊN MODAL
+    function updateSelectedLevel() {
+        const buttons =
+            document.querySelectorAll('.level-btn');
+        buttons.forEach(button => {button.classList.remove('active');
+            // Lấy level
+            const onclickValue = button.getAttribute('onclick');
+            if (onclickValue &&onclickValue.includes(`'${selectedLevel}'`)) {
+                button.classList.add('active');
+            }
+        });
+    }
+
+    // MỞ MODAL
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            console.error('Modal chưa được tải:', modalId);
+            return;
+        }
+        modal.classList.add('active');
+        console.log('Đã mở modal:', modalId);
+    }
+
+    // ĐÓNG MODAL
+    function closeModal(modalId) {
+        const modal =
+            document.getElementById(modalId);
+        if (!modal) return;
+        modal.classList.remove('active');
+    }
+
+    // CHỌN LEVEL
+    function selectLevel(element, level) {
+        const validLevels = ['level1', 'level2', 'level3', 'level4', 'level5'];
+        if (!validLevels.includes(level)) {
+            console.error('Level không hợp lệ:', level);
+            return;
+        }
+        // Lưu level được chọn
+        selectedLevel = level;
+        localStorage.setItem('selectedLevel', selectedLevel);
+        // Xóa active ở tất cả level
+        const buttons = document.querySelectorAll('.level-btn');
+        buttons.forEach(button => {button.classList.remove('active');});
+        // Active level vừa chọn
+        element.classList.add('active');
+        console.log('Đã chọn:', selectedLevel);
+    }
+
+    // NÚT CHƠI
+    function playGame() {
+        // Lưu level hiện tại
+        localStorage.setItem('selectedLevel', selectedLevel);
+        // Đóng modal nếu đang mở
+        closeModal('levelModal');
+        // Chuyển đến file cấu hình tương ứng
+        if (selectedLevel === 'level1') {
+            window.location.href = 'level1.html';
+        }
+        else if (selectedLevel === 'level2') {
+            window.location.href = 'level2.html';
+        }
+        else if (selectedLevel === 'level3') {
+            window.location.href = 'level3.html';
+        }
+        else if (selectedLevel === 'level4') {
+            window.location.href = 'level4.html';
+        }
+        else if (selectedLevel === 'level5') {
+            window.location.href = 'level5.html';
+        }
+    }
+</script>
+</html>
