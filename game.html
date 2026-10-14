@@ -10,7 +10,6 @@
             margin: 0;
             padding: 0;
         }
-        /*BACKGROUND */
         body {
             min-height: 100vh;
             font-family: Arial, sans-serif;
@@ -31,13 +30,11 @@
             z-index: -1;
         }
 
-        /*GAME CONTAINER*/
         .game-container {
             width: min(900px, 94vw);
             text-align: center;
         }
 
-        /*TITLE*/
         .game-title {
             color: white;
             font-size: 36px;
@@ -55,7 +52,6 @@
             text-shadow: 2px 2px 0 #5b351d;
         }
 
-        /*GAME INFO*/
         .game-info {
             display: flex;
             justify-content: space-between;
@@ -80,7 +76,6 @@
             color: #ff8a80;
         }
 
-        /*GAME BOARD*/
         .board-wrapper {
             display: inline-block;
             border: 12px solid #70421f;
@@ -101,7 +96,6 @@
             image-rendering: pixelated;
         }
 
-        /*CONTROLS*/
         .controls {
             margin-top: 12px;
             color: white;
@@ -120,7 +114,6 @@
             box-shadow: 0 3px 0 #aaa;
         }
 
-        /*PAUSE BUTTON*/
         .buttons {
             margin-top: 14px;
             display: flex;
@@ -147,7 +140,6 @@
             background: #d68910;
         }
 
-        /* GAME OVER*/
         .game-over {
             position: fixed;
             inset: 0;
@@ -169,6 +161,7 @@
             color: #d35400;
             font-size: 34px;
             margin-bottom: 12px;
+            gap: 6px;
         }
         .game-over-box p {
             color: #333;
@@ -181,6 +174,23 @@
         .home-btn {
             background: #3498db;
         }
+
+        .win-modal {
+            position: fixed; inset: 0; display: none;
+            justify-content: center; align-items: center;
+            background: rgba(0, 0, 0, 0.65);
+        }
+
+        .win-box {
+            width: min(400px, 90vw); padding: 30px;
+            background: #fff8e7; border: 7px solid #70421f;
+            border-radius: 16px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .win-box h2 {
+            color: #27ae60; font-size: 32px; margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -190,17 +200,22 @@
             🐍 SNAKE ADVENTURE
             <span class="level-name" id="levelName">LEVEL 1</span>
         </h1>
-        <!-- SCORE + LIVES -->
-        <div class="game-info">
-            <div> Điểm: <span class="score" id="score"> 0 </span></div>
-            <div> Mạng: <span class="lives" id="lives"> ❤️❤️❤️ </span></div>
+        <!-- ĐIỂM + MẠNG -->
+       <div class="game-info">
+            <div>Điểm: <span class="score" id="score">0</span></div>
+            <div>Mạng: <span class="lives" id="lives">❤️❤️❤️</span></div>
+            <!-- Chỉ hiện ở Level 3 -->
+            <div id="portalTimer" style="display: none;">
+                Cổng đổi sau:
+                <span id="portalTime">15</span>s
+            </div>
         </div>
 
-        <!-- GAME BOARD -->
+        <!-- SÂN CHƠI -->
         <div class="board-wrapper">
             <canvas id="gameCanvas" width="720" height="480"></canvas>
         </div>
-        <!-- PAUSE -->
+        <!-- DỪNG -->
         <div class="buttons">
             <button class="pause-btn" onclick="togglePause()">⏸ DỪNG GAME</button>
         </div>
@@ -211,350 +226,20 @@
         <div class="game-over-box">
             <h2>GAME OVER</h2>
             <p> Điểm của bạn: <strong id="finalScore"> 0 </strong></p>
-            <button class="restart-btn" onclick="restartGame()"> 🔄 CHƠI LẠI</button>
-            <button class="home-btn" onclick="goHome()">🏠 TRANG CHỦ </button>
+            <button class="restart-btn" onclick="restartGame()">CHƠI LẠI</button>
+            <br><br>
+            <button class="home-btn" onclick="goHome()">TRANG CHỦ</button>
         </div>
     </div>
 
-    <script>
-        // ĐỌC CẤU HÌNH LEVEL
-        const savedConfig =
-            localStorage.getItem("snakeLevelConfig");
-        const levelConfig = savedConfig
-            ? JSON.parse(savedConfig)
-            : {
-                level: "level1",
-                speed: 120,
-                lives: 3,
-                growSnake: true,
-                food10: true,
-                food20: true,
-                obstacles: false
-            };
+    <!-- MODAL CHIẾN THẮNG -->
+    <div class="win-modal" id="winModal">
+        <div class="win-box">
+            <h2>BẠN ĐÃ THẮNG</h2>
+            <button class="home-btn" onclick="goHome()">TRANG CHỦ</button>
+        </div>
+    </div>
 
-        // CANVAS
-        const canvas =document.getElementById("gameCanvas");
-        const ctx =canvas.getContext("2d");
-        const GRID_SIZE = 24;
-        const COLS =canvas.width / GRID_SIZE;
-        const ROWS =canvas.height / GRID_SIZE;
-
-        // GAME VARIABLES
-        let snake;
-        let direction;
-        let nextDirection;
-        let food;
-        let score = 0;
-        let lives = levelConfig.lives || 3;
-        let gameRunning = true;
-        let gameLoop;
-        let isPaused = false;
-        let obstacles = [];
-        let snakeVisible = true;
-
-        // HIỂN THỊ LEVEL
-        document.getElementById("levelName")
-            .textContent =
-            String(levelConfig.level || "level1")
-                .toUpperCase();
-
-        // KHỞI TẠO GAME
-        function initGame() {
-            snake = [
-                {x: 10,y: 10},
-                {x: 9,y: 10},
-                {x: 8,y: 10}
-            ];
-            direction = {x: 1,y: 0};
-            nextDirection = {x: 1,y: 0};
-            score = 0;
-            lives = levelConfig.lives || 3;
-            gameRunning = true;
-            isPaused = false;
-            updateInfo();
-            createFood();
-            document.getElementById("gameOver").style.display = "none";
-            document.querySelector(".pause-btn").textContent = "⏸ DỪNG GAME";
-            clearInterval(gameLoop);
-            gameLoop =setInterval(updateGame,levelConfig.speed || 120);
-            drawGame();
-            createObstacles();
-            createFood();
-        }
-
-        // DỪNG / TIẾP TỤC
-        function togglePause() {
-            if (!gameRunning) {
-                return;
-            }
-            isPaused = !isPaused;
-            const button =
-                document.querySelector(".pause-btn");
-            if (isPaused) {
-                button.textContent = "▶ TIẾP TỤC";
-            } else {
-                button.textContent ="⏸ DỪNG GAME";
-            }
-        }
-
-        // TẠO THỨC ĂN
-        function createFood() {
-            let validPosition = false;
-            while (!validPosition) {
-                const x = Math.floor(Math.random() * COLS);
-                const y = Math.floor(Math.random() * ROWS);
-                const onSnake = snake.some(segment => segment.x === x && segment.y === y);
-                if (!onSnake) {
-                    food = {x: x,y: y,value: 10};
-                    validPosition = true;
-                }
-            }
-        }
-
-        // UPDATE GAME
-        function updateGame() {
-            if (!gameRunning || isPaused) {
-                return;
-            }
-            direction = nextDirection;
-            const head = {
-                x: snake[0].x + direction.x,
-                y: snake[0].y + direction.y
-            };
-
-            // VA CHẠM TƯỜNG
-            if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
-                loseLife();
-                return;
-            }
-            // VA CHẠM THÂN
-            const hitSelf = snake.some(segment =>segment.x === head.x &&segment.y === head.y);
-            if (hitSelf) {
-                loseLife();
-                return;
-            }
-
-            // VA CHẠM ĐỊA HÌNH
-            const hitObstacle = obstacles.some(obstacle =>
-                head.x >= obstacle.x &&
-                head.x < obstacle.x + obstacle.width &&
-                head.y >= obstacle.y &&
-                head.y < obstacle.y + obstacle.height
-            );
-
-            if (hitObstacle) {
-                loseLife();
-                return;
-            }
-
-            //THÊM ĐẦU
-            snake.unshift(head);
-            //ĂN THỨC ĂN
-            if (head.x === food.x && head.y === food.y) {
-                score += food.value;
-                createFood();
-            } else {
-                snake.pop();
-            }
-            updateInfo();
-            drawGame();
-        }
-
-        // MẤT MẠNG
-        function loseLife() {
-            lives--;
-            updateInfo();
-            if (lives <= 0) {
-                endGame();
-                return;
-            }
-            snake = [
-                {x: 10, y: 10},
-                {x: 9, y: 10},
-                {x: 8, y: 10}
-            ];
-            direction = {x: 1, y: 0};
-            nextDirection = {x: 1, y: 0};
-            createFood();
-            drawGame();
-        }
-
-        // GAME OVER
-        function endGame() {
-            gameRunning = false;
-            clearInterval(gameLoop);
-            document.getElementById("finalScore").textContent = score;
-            document.getElementById("gameOver").style.display = "flex";
-        }
-
-        // DRAW GAME
-        function drawGame() {
-            // NỀN
-            ctx.fillStyle = "#65a936";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // LƯỚI
-            ctx.strokeStyle = "rgba(255,255,255,0.08)";
-            ctx.lineWidth = 1;
-            for (let x = 0;x <= canvas.width;x += GRID_SIZE) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x,canvas.height);
-                ctx.stroke();
-            }
-            for (let y = 0;y <= canvas.height;y += GRID_SIZE) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width,y);
-                ctx.stroke();
-            }
-            drawFood();
-            drawSnake();
-            drawObstacles();
-        }
-
-        // DRAW SNAKE
-        function drawSnake() {
-            snake.forEach(
-                (segment, index) => {
-                    const x =segment.x *GRID_SIZE;
-                    const y =segment.y *GRID_SIZE;
-                    if (index === 0) {
-                        // ĐẦU
-                        ctx.fillStyle ="#ffcc00";
-                        ctx.fillRect(x + 2,y + 2,GRID_SIZE - 4,GRID_SIZE - 4
-                        );
-                    } else {
-                        // THÂN
-                        ctx.fillStyle ="#ff8c00";
-                        ctx.fillRect(x + 3, y + 3, GRID_SIZE - 6, GRID_SIZE - 6);
-                    }
-                }
-            );
-        }
-
-        // DRAW FOOD
-        function drawFood() {
-            const x = food.x * GRID_SIZE;
-            const y = food.y * GRID_SIZE;
-            ctx.fillStyle = "#FFD700";
-            ctx.fillRect(x + 3,y + 3,GRID_SIZE - 6,GRID_SIZE - 6);
-        }
-
-        // ĐIỀU KHIỂN
-        document.addEventListener(
-            "keydown",
-            function(event) {
-                const key = event.key.toLowerCase();
-                // LÊN
-                if (key === "arrowup" ||key === "w") {
-                    if (direction.y !== 1) {
-                        nextDirection = {x: 0,y: -1};
-                    }
-                }
-                // XUỐNG
-                else if (key === "arrowdown" || key === "s"
-                ) {
-                    if (direction.y !== -1) {
-                        nextDirection = {
-                            x: 0,
-                            y: 1
-                        };
-                    }
-                }
-                // TRÁI
-                else if ( key === "arrowleft" || key === "a") {
-                    if (direction.x !== 1) {
-                        nextDirection = {x: -1, y: 0};
-                    }
-                }
-                // PHẢI
-                else if (key === "arrowright" ||key === "d") {
-                    if (direction.x !== -1) {
-                        nextDirection = {x: 1,y: 0};
-                    }
-                }
-                // KHÔNG SCROLL
-                if (key === "arrowup" ||key === "arrowdown" ||key === "arrowleft" ||key === "arrowright") {
-                    event.preventDefault();
-                }
-            }
-        );
-
-        // TẠO ĐỊA HÌNH
-        function createObstacles() {
-            obstacles = [];
-            // Level 1 không có địa hình
-            if (!levelConfig.obstacles) {
-                return;
-            }
-            const count = levelConfig.obstacleCount || 4;
-            const size = levelConfig.obstacleSize || 4;
-            let attempts = 0;
-            while (obstacles.length < count && attempts < 1000) {
-                attempts++;
-                // Đảm bảo địa hình 4x4 không vượt khỏi board
-                const x = Math.floor( Math.random() * (COLS - size));
-                const y = Math.floor( Math.random() * (ROWS - size));
-                const newObstacle = {x: x, y: y, width: size, height: size};
-                // Không để địa hình đè lên rắn
-                const overlapsSnake = snake.some(segment =>
-                    segment.x >= newObstacle.x &&
-                    segment.x < newObstacle.x + newObstacle.width &&
-                    segment.y >= newObstacle.y &&
-                    segment.y < newObstacle.y + newObstacle.height
-                );
-                if (overlapsSnake) {
-                    continue;
-                }
-                // Không để các địa hình đè lên nhau
-                const overlapsObstacle = obstacles.some(obstacle =>
-                    newObstacle.x < obstacle.x + obstacle.width &&
-                    newObstacle.x + newObstacle.width > obstacle.x &&
-                    newObstacle.y < obstacle.y + obstacle.height &&
-                    newObstacle.y + newObstacle.height > obstacle.y
-                );
-                if (overlapsObstacle) {
-                    continue;
-                }
-                obstacles.push(newObstacle);
-            }
-        }
-
-        // VẼ ĐỊA HÌNH
-        function drawObstacles() {
-            obstacles.forEach(obstacle => {
-                const x = obstacle.x * GRID_SIZE;
-                const y = obstacle.y * GRID_SIZE;
-                const width = obstacle.width * GRID_SIZE;
-                const height = obstacle.height * GRID_SIZE;
-                // Mặt địa hình
-                ctx.fillStyle = "#8B5A2B";
-                ctx.fillRect(x, y, width, height);
-
-                // Viền nâu đậm
-                ctx.strokeStyle = "#4A2A14";
-                ctx.lineWidth = 4;
-                ctx.strokeRect( x + 2, y + 2, width - 4, height - 4);
-            });
-        }
-  
-        // UPDATE INFO
-        function updateInfo() {
-            document.getElementById("score").textContent = score;
-            document.getElementById("lives").textContent = "❤️".repeat(lives);
-        }
-
-        // RESTART
-        function restartGame() {
-            initGame();
-        }
-
-        // HOME
-        function goHome() {
-            window.location.href ="home.html";
-        }
-        // START
-        initGame();
-    </script>
+    <script src="gameLogic.js"></script>
 </body>
 </html>

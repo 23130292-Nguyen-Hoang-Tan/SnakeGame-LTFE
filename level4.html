@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Adventure - Level 3</title>
+</head>
+<body>
+<script>
+    const levelConfig = {
+        level: "level4",
+        speed: 120,
+        lives: 3,
+        growSnake: false,
+        food10: true,
+        obstacles: false
+    };
+    localStorage.setItem(
+        "snakeLevelConfig",
+        JSON.stringify(levelConfig)
+    );
+    window.location.href = "game.html";
+</script>
+</body>
+</html>
