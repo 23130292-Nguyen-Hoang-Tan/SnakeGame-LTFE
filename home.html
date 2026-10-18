@@ -60,36 +60,28 @@
             margin-top: 5vh;
         }
         .game-title {
-            font-size: 10rem;
-            color: #fff176;
+            font-size: 8rem;
+            font-weight: 800;
+            color: #eeffc2;
             text-align: center;
             line-height: 1;
             letter-spacing: 4px;
-            text-shadow: 
-                -4px -4px 0 #f57f17,  4px -4px 0 #f57f17,
-                -4px  4px 0 #f57f17,  4px  4px 0 #f57f17,
-                 0 12px 0 #e65100, 0 20px 15px rgba(0,0,0,0.5);
             margin-bottom: 2vh;
             position: relative;
         }
         .game-title span {
             display: block;
             font-size: 8rem;
-            color: #b9f6ca;
-            text-shadow: 
-                -3px -3px 0 #1b5e20,  3px -3px 0 #1b5e20,
-                -3px  3px 0 #1b5e20,  3px  3px 0 #1b5e20,
-                 0 8px 0 #004d40;
+            color: #3c8947;
         }
         .snake-icon {
             position: absolute;
-            font-size: 5rem;
+            font-size: 8rem;
             top: -20px;
             right: 40px;
             transform: rotate(15deg);
             filter: drop-shadow(0 5px 0 #1b5e20);
         }
-        /* Hiệu ứng 3D cho nút bấm*/
         .btn-group {
             display: flex;
             flex-direction: column;
@@ -138,7 +130,6 @@
 </head>
 <body>
 
-    <!-- Lớp giao diện (Chứa Tiêu đề và Nút bấm) -->
     <div class="ui-layer">
         <div class="ui-content">
             <h1 class="game-title">SNAKE<span>ADVENTURE</span><div class="snake-icon">🐍</div></h1>
@@ -157,63 +148,71 @@
     <div id="levelModalContainer"></div>
 </body>
 <script>
-    // LEVEL HIỆN TẠI
     // Mặc định khi mở game là Level 1
     let selectedLevel = 'level1';
 
     // NẠP MODAL
     async function loadModals() {
         try {
-            const levelResponse = await fetch('level.html');
-            if (!levelResponse.ok) {
-                throw new Error('Không thể tải level.html');
+            // Tải file level.html
+            const response = await fetch("level.html");
+            if (!response.ok) {
+                throw new Error("Không thể tải level.html");
             }
-            // Nạp level modal
-            const levelHTML = await levelResponse.text();
-            document.getElementById('levelModalContainer').innerHTML = levelHTML;
-            // Đọc level đã lưu
-            const savedLevel = localStorage.getItem('selectedLevel');
-            if ( savedLevel && ['level1', 'level2', 'level3', 'level4', 'level5'].includes(savedLevel)) {
+            // Lấy nội dung HTML
+            const html = await response.text();
+            // Đưa HTML vào trang
+            document.getElementById("levelModalContainer").innerHTML = html;
+            // Lấy level đã lưu
+            const savedLevel = localStorage.getItem("selectedLevel");
+            // Kiểm tra level đã lưu
+            if (savedLevel == "level1" ||
+                savedLevel == "level2" ||
+                savedLevel == "level3" ||
+                savedLevel == "level4" ||
+                savedLevel == "level5") {
+
                 selectedLevel = savedLevel;
             }
-            // Đánh dấu level hiện tại
+            // Cập nhật nút level
             updateSelectedLevel();
-            console.log('Đã tải modal level.');
         } catch (error) {
-            console.error(
-                'Lỗi khi tải modal:',
-                error
-            );
+            console.log("Lỗi khi tải modal:", error);
         }
     }
 
-document.addEventListener(
-    'DOMContentLoaded',
-    loadModals
-);
+    document.addEventListener(
+        'DOMContentLoaded',
+        loadModals
+    );
 
     // CẬP NHẬT LEVEL ĐANG CHỌN TRÊN MODAL
     function updateSelectedLevel() {
-        const buttons =
-            document.querySelectorAll('.level-btn');
-        buttons.forEach(button => {button.classList.remove('active');
-            // Lấy level
-            const onclickValue = button.getAttribute('onclick');
-            if (onclickValue &&onclickValue.includes(`'${selectedLevel}'`)) {
-                button.classList.add('active');
+        // Lấy tất cả nút chọn level
+        const buttons = document.querySelectorAll(".level-btn");
+
+        for (let i = 0; i < buttons.length; i++) {
+            let button = buttons[i];
+            // Xóa trạng thái active
+            button.classList.remove("active");
+            // Lấy nội dung onclick
+            let onclickValue = button.getAttribute("onclick");
+            // Kiểm tra nút có phải level đang chọn không
+            if (onclickValue && onclickValue.includes("'" + selectedLevel + "'")) {
+                button.classList.add("active");
             }
-        });
+        }
     }
 
     // MỞ MODAL
     function openModal(modalId) {
+        //Lấy ID của modal
         const modal = document.getElementById(modalId);
         if (!modal) {
-            console.error('Modal chưa được tải:', modalId);
             return;
         }
+        //Thêm trạng thái active cho modal
         modal.classList.add('active');
-        console.log('Đã mở modal:', modalId);
     }
 
     // ĐÓNG MODAL
@@ -225,21 +224,29 @@ document.addEventListener(
     }
 
     // CHỌN LEVEL
-    function selectLevel(element, level) {
-        const validLevels = ['level1', 'level2', 'level3', 'level4', 'level5'];
-        if (!validLevels.includes(level)) {
-            console.error('Level không hợp lệ:', level);
+   function selectLevel(element, level) {
+        // Kiểm tra level có hợp lệ không
+        if (level != "level1" &&
+            level != "level2" &&
+            level != "level3" &&
+            level != "level4" &&
+            level != "level5") {
             return;
         }
+
         // Lưu level được chọn
         selectedLevel = level;
-        localStorage.setItem('selectedLevel', selectedLevel);
-        // Xóa active ở tất cả level
-        const buttons = document.querySelectorAll('.level-btn');
-        buttons.forEach(button => {button.classList.remove('active');});
-        // Active level vừa chọn
-        element.classList.add('active');
-        console.log('Đã chọn:', selectedLevel);
+        localStorage.setItem("selectedLevel", selectedLevel);
+        // Lấy tất cả nút level
+        const buttons = document.querySelectorAll(".level-btn");
+        // Xóa active ở tất cả các nút
+        for (let i = 0; i < buttons.length; i++) {
+            buttons[i].classList.remove("active");
+        }
+        // Thêm active cho level vừa chọn
+        element.classList.add("active");
+
+        console.log("Đã chọn:", selectedLevel);
     }
 
     // NÚT CHƠI

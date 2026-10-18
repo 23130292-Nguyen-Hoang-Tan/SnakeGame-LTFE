@@ -69,9 +69,7 @@ let botTimer = null;
 const BOT_NORMAL_INTERVAL = 120;
 
 // Hiển thị level
-document.getElementById("levelName").textContent =
-    (levelConfig.level || "level1").toUpperCase();
-
+document.getElementById("levelName").textContent = (levelConfig.level || "level1").toUpperCase();
 
 // ==================== KHỞI TẠO ====================
 function initGame() {
@@ -124,8 +122,12 @@ function initGame() {
 function togglePause() {
     if (!gameRunning) return;
     isPaused = !isPaused;
-    document.querySelector(".pause-btn").textContent =
-        isPaused ? "▶ TIẾP TỤC" : "⏸ DỪNG GAME";
+    const pauseButton = document.querySelector(".pause-btn");
+    if (isPaused) {
+        pauseButton.textContent = "▶ TIẾP TỤC";
+    } else {
+        pauseButton.textContent = "⏸ DỪNG GAME";
+    }
 }
 
 
@@ -191,13 +193,22 @@ function updateGame() {
         x: snake[0].x + direction.x,
         y: snake[0].y + direction.y
     };
-    // Đụng biên
+   // Đụng biên
     if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
         loseLife();
         return;
     }
+
     // Đụng thân
-    if (snake.some(part => part.x === head.x && part.y === head.y)) {
+    let hitSnake = false;
+    for (let i = 0; i < snake.length; i++) {
+        if (snake[i].x === head.x && snake[i].y === head.y) {
+            hitSnake = true;
+            break;
+        }
+    }
+
+    if (hitSnake) {
         loseLife();
         return;
     }
@@ -223,20 +234,16 @@ function updateGame() {
     // Ăn thức ăn
     if (food && head.x === food.x && head.y === food.y) {
         score += food.value;
-
         if (levelConfig.level !== "level1" &&
             score >= 100 &&
             !lifeBuffSpawned) {
             createLifeBuff();
         }
-
         if (score >= 150) {
             checkNextLevel();
             return;
         }
-
         createFood();
-
         // Level 4: ăn thức ăn nhưng không dài thêm
         if (levelConfig.level === "level4") {
             snake.pop();
@@ -300,26 +307,30 @@ function createObstacles() {
     for (let i = 0; i < count * 20 && obstacles.length < count; i++) {
         const x = Math.floor(Math.random() * (COLS - size));
         const y = Math.floor(Math.random() * (ROWS - size));
-        const obstacle = {
-            x: x,
-            y: y,
-            width: size,
-            height: size
-        };
+        const obstacle = {x: x, y: y, width: size, height: size};
 
-        if (snake.some(part =>
-            part.x >= x && part.x < x + size &&
-            part.y >= y && part.y < y + size
-        )) {
+        let hitSnake = false;
+        for (const part of snake) {
+            if (part.x >= x && part.x < x + size && part.y >= y && part.y < y + size) {
+                hitSnake = true;
+                break;
+            }
+        }
+        if (hitSnake) {
             continue;
         }
 
-        if (obstacles.some(other =>
-            x < other.x + other.width &&
-            x + size > other.x &&
-            y < other.y + other.height &&
-            y + size > other.y
-        )) {
+        let hitObstacle = false;
+        for (const other of obstacles) {
+            if (x < other.x + other.width &&
+                x + size > other.x &&
+                y < other.y + other.height &&
+                y + size > other.y) {
+                hitObstacle = true;
+                break;
+            }
+        }
+        if (hitObstacle) {
             continue;
         }
 
@@ -328,12 +339,16 @@ function createObstacles() {
 }
 
 function isObstacleCell(x, y) {
-    return obstacles.some(obstacle =>
-        x >= obstacle.x &&
-        x < obstacle.x + obstacle.width &&
-        y >= obstacle.y &&
-        y < obstacle.y + obstacle.height
-    );
+    for (let i = 0; i < obstacles.length; i++) {
+        if (x >= obstacles[i].x &&
+            x < obstacles[i].x + obstacles[i].width &&
+            y >= obstacles[i].y &&
+            y < obstacles[i].y + obstacles[i].height) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 
@@ -341,10 +356,7 @@ function isObstacleCell(x, y) {
 
 function createPortals() {
     portals = [];
-
-    const y = Math.floor(
-        Math.random() * (ROWS - PORTAL_HEIGHT - 4)
-    ) + 2;
+    const y = Math.floor(Math.random() * (ROWS - PORTAL_HEIGHT - 4)) + 2;
 
     portals.push({
         x: MAP_WALL_X - 1,
@@ -364,50 +376,81 @@ function createPortals() {
 }
 
 function isPortalCell(x, y) {
-    if (levelConfig.level !== "level3") return false;
+    if (levelConfig.level !== "level3") {
+        return false;
+    }
 
-    return portals.some(portal =>
-        x >= portal.x &&
-        x < portal.x + portal.width &&
-        y >= portal.y &&
-        y < portal.y + portal.height
-    );
+    for (let i = 0; i < portals.length; i++) {
+        if (x >= portals[i].x &&
+            x < portals[i].x + portals[i].width &&
+            y >= portals[i].y &&
+            y < portals[i].y + portals[i].height) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function getPortalAt(x, y) {
-    return portals.find(portal =>
-        x >= portal.x &&
-        x < portal.x + portal.width &&
-        y >= portal.y &&
-        y < portal.y + portal.height
-    );
+    for (let i = 0; i < portals.length; i++) {
+        if (x >= portals[i].x &&
+            x < portals[i].x + portals[i].width &&
+            y >= portals[i].y &&
+            y < portals[i].y + portals[i].height) {
+            return portals[i];
+        }
+    }
+
+    return null;
 }
 
 function teleportSnake() {
-    if (portals.length < 2) return;
-
+    if (portals.length < 2) {
+        return;
+    }
     const current = getPortalAt(snake[0].x, snake[0].y);
-    if (!current) return;
+    if (!current) {
+        return;
+    }
 
-    const target = portals.find(portal => portal !== current);
-    if (!target) return;
+    let target = null;
+    for (let i = 0; i < portals.length; i++) {
+        if (portals[i] !== current) {
+            target = portals[i];
+            break;
+        }
+    }
+    if (!target) {
+        return;
+    }
 
     const offsetY = snake[0].y - current.y;
     let newY = target.y + offsetY;
 
-    newY = Math.max(
-        target.y,
-        Math.min(target.y + target.height - 1, newY)
-    );
+    if (newY < target.y) {
+        newY = target.y;
+    }
 
-    if (snake.some((part, index) =>
-        index > 0 && part.x === target.x && part.y === newY
-    )) {
+    if (newY > target.y + target.height - 1) {
+        newY = target.y + target.height - 1;
+    }
+
+    let hitSnake = false;
+
+    for (let i = 1; i < snake.length; i++) {
+        if (snake[i].x === target.x &&
+            snake[i].y === newY) {
+            hitSnake = true;
+            break;
+        }
+    }
+
+    if (hitSnake) {
         loseLife();
         return;
     }
-    snake[0] = {x: target.x, y: newY};
 
+    snake[0] = {x: target.x, y: newY};
     drawGame();
 }
 
@@ -449,17 +492,30 @@ function updatePortalTimer() {
 }
 
 function relocateLifeBuff() {
-    if (!lifeBuff) return;
-
+    if (!lifeBuff) {
+        return;
+    }
     for (let i = 0; i < 1000; i++) {
         const x = Math.floor(Math.random() * COLS);
         const y = Math.floor(Math.random() * ROWS);
 
-        if (snake.some(part => part.x === x && part.y === y)) continue;
-        if (isPortalCell(x, y)) continue;
-        if (food && food.x === x && food.y === y) continue;
-
-        lifeBuff = { x: x, y: y };
+        let hitSnake = false;
+        for (let j = 0; j < snake.length; j++) {
+            if (snake[j].x === x && snake[j].y === y) {
+                hitSnake = true;
+                break;
+            }
+        }
+        if (hitSnake) {
+            continue;
+        }
+        if (isPortalCell(x, y)) {
+            continue;
+        }
+        if (food && food.x === x && food.y === y) {
+            continue;
+        }
+        lifeBuff = {x: x, y: y};
         return;
     }
 }
@@ -526,29 +582,37 @@ function updateBullets() {
     if (levelConfig.level !== "level4" || !gameRunning || isPaused) {
         return;
     }
+
     for (let i = bullets.length - 1; i >= 0; i--) {
         const bullet = bullets[i];
         bullet.x += bullet.dx;
         bullet.y += bullet.dy;
-        const hitSnake = snake.some(part =>
-            Math.abs(part.x - bullet.x) < 0.5 &&
-            Math.abs(part.y - bullet.y) < 0.5
-        );
+
+        let hitSnake = false;
+        for (let j = 0; j < snake.length; j++) {
+            if (Math.abs(snake[j].x - bullet.x) < 0.5 &&
+                Math.abs(snake[j].y - bullet.y) < 0.5) {
+                hitSnake = true;
+                break;
+            }
+        }
 
         if (hitSnake) {
             bullets.splice(i, 1);
             loseLife();
-            if (!gameRunning) return;
+
+            if (!gameRunning) {
+                return;
+            }
+
             continue;
         }
-
         if (bullet.x < -1 || bullet.x > COLS ||
             bullet.y < -1 || bullet.y > ROWS) {
             bullets.splice(i, 1);
         }
     }
 }
-
 
 // ==================== LEVEL 5 - BOT ====================
 
@@ -559,15 +623,8 @@ function createBot() {
         { x: 20, y: 3 },
         { x: 20, y: 14 }
     ];
-    const position = positions[
-        Math.floor(Math.random() * positions.length)
-    ];
-    bot = {
-        x: position.x,
-        y: position.y,
-        width: 2,
-        height: 2
-    };
+    const position = positions[Math.floor(Math.random() * positions.length)];
+    bot = {x: position.x, y: position.y, width: 2, height: 2};
     if (!isBotPositionValid(bot.x, bot.y, bot.width, bot.height)) {
         for (let y = 1; y < ROWS - bot.height; y++) {
             for (let x = 1; x < COLS - bot.width; x++) {
@@ -581,22 +638,24 @@ function createBot() {
     }
 }
 
+
 function isBotPositionValid(x, y, width, height) {
-    if (x < 0 || y < 0 ||
-        x + width > COLS || y + height > ROWS) {
+    // Kiểm tra bot có nằm ngoài bản đồ không
+    if (x < 0 || y < 0 || x + width > COLS || y + height > ROWS) {
         return false;
     }
 
-    // Bot không được xuất hiện đè lên rắn
-    if (snake.some(part =>
-        part.x >= x && part.x < x + width &&
-        part.y >= y && part.y < y + height
-    )) {
-        return false;
+    // Kiểm tra bot có đè lên rắn không
+    for (let i = 0; i < snake.length; i++) {
+        let part = snake[i];
+        if (part.x >= x && part.x < x + width &&
+            part.y >= y && part.y < y + height) {
+            return false;
+        }
     }
-
     return true;
 }
+
 
 function botContainsCell(x, y) {
     if (!bot) return false;
@@ -611,10 +670,13 @@ function botContainsCell(x, y) {
 function startBotTimer() {
     stopBotTimer();
     botTimer = setInterval(function () {
-        if (!gameRunning || isPaused) return;
+        if (gameRunning == false || isPaused == true) {
+            return;
+        }
         updateBot();
     }, 100);
 }
+
 
 function stopBotTimer() {
     if (botTimer) {
@@ -693,7 +755,6 @@ function isBotMoveValid(x, y) {
         y + bot.height > ROWS) {
         return false;
     }
-
     return true;
 }
 
@@ -728,18 +789,28 @@ function drawGame() {
 }
 
 function drawSnake() {
-    snake.forEach(function (part, index) {
-        const x = part.x * GRID_SIZE;
-        const y = part.y * GRID_SIZE;
-        ctx.fillStyle = index === 0 ? "#ffcc00" : "#ff8c00";
-        const padding = index === 0 ? 2 : 3;
+    for (let i = 0; i < snake.length; i++) {
+        let part = snake[i];
+        let x = part.x * GRID_SIZE;
+        let y = part.y * GRID_SIZE;
+        if (i == 0) {
+            ctx.fillStyle = "#ffcc00";
+        } else {
+            ctx.fillStyle = "#ff8c00";
+        }
+
+        let padding = 3;
+        // Đầu rắn nhỏ hơn một chút
+        if (i == 0) {
+            padding = 2;
+        }
         ctx.fillRect(
             x + padding,
             y + padding,
             GRID_SIZE - padding * 2,
             GRID_SIZE - padding * 2
         );
-    });
+    }
 }
 
 function drawFood() {
@@ -802,26 +873,34 @@ function drawPortals() {
 }
 
 function drawBulletCannons() {
-    if (levelConfig.level !== "level4") return;
-    const points = [
-        { x: 8, y: 0 }, { x: 22, y: 0 },
-        { x: 8, y: ROWS - 1 }, { x: 22, y: ROWS - 1 },
-        { x: 0, y: 6 }, { x: 0, y: 13 },
-        { x: COLS - 1, y: 6 }, { x: COLS - 1, y: 13 }
+    if (levelConfig.level != "level4") {
+        return;
+    }
+    let points = [
+        { x: 8, y: 0 },
+        { x: 22, y: 0 },
+        { x: 8, y: ROWS - 1 },
+        { x: 22, y: ROWS - 1 },
+        { x: 0, y: 6 },
+        { x: 0, y: 13 },
+        { x: COLS - 1, y: 6 },
+        { x: COLS - 1, y: 13 }
     ];
 
-    points.forEach(function (point) {
-        const x = point.x * GRID_SIZE + GRID_SIZE / 2;
-        const y = point.y * GRID_SIZE + GRID_SIZE / 2;
+    for (let i = 0; i < points.length; i++) {
+        let point = points[i];
+        let x = point.x * GRID_SIZE + GRID_SIZE / 2;
+        let y = point.y * GRID_SIZE + GRID_SIZE / 2;
         ctx.fillStyle = "#4a2a14";
         ctx.beginPath();
         ctx.arc(x, y, 9, 0, Math.PI * 2);
         ctx.fill();
+
         ctx.fillStyle = "#8b5a2b";
         ctx.beginPath();
         ctx.arc(x, y, 5, 0, Math.PI * 2);
         ctx.fill();
-    });
+    }
 }
 
 function drawBullets() {
@@ -853,12 +932,9 @@ function drawBot() {
     ctx.strokeRect(x + 2, y + 2, width - 4, height - 4);
 }
 
-
 // ==================== ĐIỀU KHIỂN ====================
-
 document.addEventListener("keydown", function (event) {
     const key = event.key.toLowerCase();
-
     if (key === "arrowup" || key === "w") {
         if (direction.y !== 1) {
             nextDirection = { x: 0, y: -1 };
@@ -880,7 +956,6 @@ document.addEventListener("keydown", function (event) {
 
 
 // ==================== CHUYỂN LEVEL ====================
-
 function checkNextLevel() {
     if (score < 150) return;
 
